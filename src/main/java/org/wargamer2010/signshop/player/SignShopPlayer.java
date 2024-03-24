@@ -242,6 +242,10 @@ public class SignShopPlayer {
             response = Vault.getEconomy().depositPlayer(getOfflinePlayer(), actual);
         } catch (java.lang.RuntimeException ex) {
             response = new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "");
+            SignShop.getInstance().debugMessage("canNotHaveMoney() caught exception from economy!");
+            if (SignShop.getInstance().getSignShopConfig().debugging()) {
+                ex.printStackTrace();
+            }
         }
 
         double newBalance = Vault.getEconomy().getBalance(getOfflinePlayer());
@@ -270,6 +274,10 @@ public class SignShopPlayer {
                 return true;
         } catch (java.lang.RuntimeException ex) {
             response = new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "");
+            SignShop.getInstance().debugMessage("mutateMoney() caught exception from economy!");
+            if (SignShop.getInstance().getSignShopConfig().debugging()) {
+                ex.printStackTrace();
+            }
         }
         return response.type == EconomyResponse.ResponseType.SUCCESS;
     }
