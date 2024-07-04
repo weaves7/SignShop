@@ -197,7 +197,7 @@ public class Seller {
         temp.put("sign", signshopUtil.convertLocationToString(getSignLocation()));
 
         Map<String, String> misc = miscProps;
-        if(misc.size() > 0)
+        if(!misc.isEmpty())
             temp.put("misc", MapToList(misc));
 
         serializedData = temp;

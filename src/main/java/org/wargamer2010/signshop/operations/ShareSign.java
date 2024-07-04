@@ -41,7 +41,7 @@ public class ShareSign implements SignShopOperation {
         } else {
             StringBuilder profitshops = new StringBuilder();
             boolean first = true;
-            Block bLast = shops.get(shops.size()-1);
+            Block bLast = shops.getLast();
             for(Block bTemp : shops) {
                 Location loc = bTemp.getLocation();
                 if(first) first = false;
@@ -58,7 +58,7 @@ public class ShareSign implements SignShopOperation {
             if(!signshopUtil.lineIsEmpty(lines[2])) names.add(lines[2]);
             names.add("the Shop's respective owners");
             first = true;
-            String sLast = names.get(names.size()-1);
+            String sLast = names.getLast();
             for(String sTemp : names) {
                 if(first) first = false;
                 else if (!sLast.equals(sTemp)) profits.append(", ");//TODO fix this

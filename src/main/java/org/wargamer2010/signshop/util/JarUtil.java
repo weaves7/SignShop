@@ -26,7 +26,7 @@ public class JarUtil {
             File libLocation = new File(SignShop.getInstance().getDataFolder(), "lib" + File.separator + filename);
             if (!libLocation.exists())
                 getDriver(libLocation);
-            JarUtil.addClassPath(new URL("jar:file:" + libLocation.getPath() + "!/"));
+            JarUtil.addClassPath(new URL("jar:file:" + libLocation.getPath() + "!/"));//TODO
             return true;
         } catch (IOException ignored) {
         } finally {

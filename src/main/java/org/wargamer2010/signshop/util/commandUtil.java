@@ -46,7 +46,7 @@ public class commandUtil {
 
         StringBuilder rootBuilder = new StringBuilder(preCommands.length * 25);
         for(String pre : preCommands) {
-            if(rootBuilder.length() == 0) {
+            if(rootBuilder.isEmpty()) {
                 rootBuilder.append("/");
                 rootBuilder.append(RootCommand);
             }

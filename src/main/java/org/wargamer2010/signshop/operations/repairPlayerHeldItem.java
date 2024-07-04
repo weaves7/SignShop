@@ -29,7 +29,7 @@ public class repairPlayerHeldItem implements SignShopOperation {
             ssArgs.sendFailedRequirementsMessage("invalid_item_to_repair");
             return false;
         }
-        else if (isInHand.getEnchantments().size() > 0 && !SignShop.getInstance().getSignShopConfig().getAllowEnchantedRepair() && !ssArgs.getPlayer().get().hasPerm("SignShop.ignorerepair", false)) {
+        else if (!isInHand.getEnchantments().isEmpty() && !SignShop.getInstance().getSignShopConfig().getAllowEnchantedRepair() && !ssArgs.getPlayer().get().hasPerm("SignShop.ignorerepair", false)) {
             ssArgs.sendFailedRequirementsMessage("enchanted_not_allowed");
             return false;
         }

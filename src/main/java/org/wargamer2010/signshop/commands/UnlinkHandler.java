@@ -110,7 +110,7 @@ public class UnlinkHandler implements ICommandHandler {
             SignShop.scheduleEvent(event);
         }
 
-        return affectedSellers.size() > 0;
+        return !affectedSellers.isEmpty();
     }
 
     private boolean isCoordAtEnd(Location startLoc, Location endLoc, double currentValue, char type) {

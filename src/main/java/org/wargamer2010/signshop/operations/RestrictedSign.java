@@ -25,7 +25,7 @@ public class RestrictedSign implements SignShopOperation {
         } else {
             StringBuilder restrictedshops = new StringBuilder();
             boolean first = true;
-            Block bLast = shops.get(shops.size()-1);
+            Block bLast = shops.getLast();
             for(Block bTemp : shops) {
                 Location loc = bTemp.getLocation();
                 if(first) first = false;

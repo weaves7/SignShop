@@ -66,7 +66,7 @@ public class economyUtil {
 
     private static double parsePriceInternational(String price) {
 
-        if (price == null || price.equals("")) {
+        if (price == null || price.isEmpty()) {
             return 0.0d;
         }
 

@@ -12,7 +12,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.*;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.potion.PotionType;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.configuration.ColorUtil;
 import org.wargamer2010.signshop.util.SSTimeUtil;
@@ -99,7 +98,7 @@ public class SignShopItemMeta {
         if(stack.getItemMeta() != null) {
             String custom = (stack.getItemMeta().hasDisplayName()
                     ? (txtcolor + "\"" + customcolor + stack.getItemMeta().getDisplayName() + txtcolor + "\"") : "");
-            if(custom.length() > 0)
+            if(!custom.isEmpty())
                 displayname = (custom + " (" + normal + ")" + txtcolor);
         }
 
@@ -109,7 +108,7 @@ public class SignShopItemMeta {
         //noinspection deprecation TODO remove deprecation
         if(stack.getType().getMaxDurability() >= 30 && stack.getDurability() != 0)
             displayname = (" Damaged " + displayname);
-        if(stack.getEnchantments().size() > 0)
+        if(!stack.getEnchantments().isEmpty())
             displayname += (txtcolor + " " + itemUtil.enchantmentsToMessageFormat(stack.getEnchantments()));
 
         return displayname;
@@ -145,42 +144,50 @@ public class SignShopItemMeta {
             } else if(type == MetaType.Potion) {
                 PotionMeta potionMeta = (PotionMeta) meta;
                 StringBuilder nameBuilder = new StringBuilder();
-                nameBuilder.append(getTextColorTwo());
-                nameBuilder.append(itemUtil.stripConstantCase(stack.getType().toString()));
                 nameBuilder.append(getTextColor());
-                nameBuilder.append(" (");
+                nameBuilder.append(itemUtil.stripConstantCase(stack.getType().toString()));
+                boolean first = true;
+
+                nameBuilder.append(" \"");
                 if (potionMeta.hasDisplayName()) {
-                    nameBuilder.append("\"");
                     nameBuilder.append(potionMeta.getDisplayName());
-                    nameBuilder.append(getTextColor());
-                    nameBuilder.append("\" ");
+                }
+                else if (potionMeta.hasBasePotionType()) {
+                    nameBuilder.append(itemUtil.stripConstantCase(potionMeta.getBasePotionType().toString()));
+                }
+                nameBuilder.append(getTextColor());
+                nameBuilder.append("\" ");
+                nameBuilder.append(getTextColorTwo());
+                nameBuilder.append("(");
+
+                List<PotionEffect> effects = new ArrayList<>();
+                if (potionMeta.hasBasePotionType()){
+                    effects.addAll(potionMeta.getBasePotionType().getPotionEffects());
                 }
 
-                if (potionMeta.getBasePotionData().getType() == PotionType.UNCRAFTABLE || potionMeta.getBasePotionData().getType() == PotionType.WATER) {
+                if (potionMeta.hasCustomEffects()) {
+                    effects.addAll(potionMeta.getCustomEffects());
+                }
 
-                    boolean first = true;
-                    for (PotionEffect potionEffect : potionMeta.getCustomEffects()) {
-                        if (first) first = false;
-                        else nameBuilder.append(", ");
-                        StringBuilder effectString = new StringBuilder();
-                        effectString.append(itemUtil.stripConstantCase(potionEffect.getType().getName()));
-                        if (potionEffect.getAmplifier() > 0) {
-                            effectString.append(" ");
-                            effectString.append(potionEffect.getAmplifier());
+                if (!effects.isEmpty()){
+                    for (PotionEffect potionEffect : effects) {
+                            if (first) first = false;
+                            else nameBuilder.append(", ");
+                            StringBuilder effectString = new StringBuilder();
+                            effectString.append(itemUtil.stripConstantCase(potionEffect.getType().getKey().getKey()));
+                            if (potionEffect.getAmplifier() > 0) {
+                                effectString.append("_");
+                                effectString.append(potionEffect.getAmplifier() + 1);
+                            }
+                            if (potionEffect.getDuration() > 20) {
+                                effectString.append(" - ");
+                                effectString.append(SSTimeUtil.parseTime(potionEffect.getDuration() / 20));
+                            }
+                            nameBuilder.append(effectString);
+
                         }
-                        effectString.append(" for ");
-                        effectString.append(SSTimeUtil.parseTime(potionEffect.getDuration() / 20));
-                        nameBuilder.append(effectString);
-
                     }
-                }
-                else {
-                    String prefix = "";
-                    if (potionMeta.getBasePotionData().isUpgraded()) prefix = "Strong ";
-                    if (potionMeta.getBasePotionData().isExtended()) prefix = "Lasting ";
-                    nameBuilder.append(prefix);
-                    nameBuilder.append(itemUtil.stripConstantCase(potionMeta.getBasePotionData().getType().toString()));
-                }
+
 
                 nameBuilder.append(")");
 
@@ -200,9 +207,9 @@ public class SignShopItemMeta {
 
                         namebuilder.append(convertFireworkTypeToDisplay(effect.getType()));
                         namebuilder.append(" with");
-                        namebuilder.append((effect.getColors().size() > 0 ? " colors: " : ""));
+                        namebuilder.append((!effect.getColors().isEmpty() ? " colors: " : ""));
                         namebuilder.append(convertColorsToDisplay(effect.getColors()));
-                        namebuilder.append((effect.getFadeColors().size() > 0 ? " and fadecolors: " : ""));
+                        namebuilder.append((!effect.getFadeColors().isEmpty() ? " and fadecolors: " : ""));
                         namebuilder.append(convertColorsToDisplay(effect.getFadeColors()));
 
                         namebuilder.append(effect.hasFlicker() ? " +twinkle" : "");
@@ -223,15 +230,8 @@ public class SignShopItemMeta {
                     nameBuilder.append(getTextColor());
                     nameBuilder.append(" [");
 
-                    boolean isEmpty = true;
                     ItemStack[] itemStacks = shulker.getInventory().getContents();
-                    for (ItemStack item : itemStacks) {
-                        if (item != null){
-                            isEmpty = false;
-                            break;
-                        }
-                    }
-                    if (isEmpty){//TODO change to shulker.getInventory().isEmpty() when available
+                    if (shulker.getInventory().isEmpty()){
                         nameBuilder.append("Empty");
                     } else {
 
@@ -499,7 +499,7 @@ public class SignShopItemMeta {
             return "";
         StringBuilder returnbuilder = new StringBuilder(meta.getCustomEffects().size() * 50);
         for(PotionEffect effect : meta.getCustomEffects()) {
-            returnbuilder.append(effect.getType().getName());
+            returnbuilder.append(effect.getType().getKey().getKey());
             returnbuilder.append(valueSeperator);
             returnbuilder.append(effect.getDuration());
             returnbuilder.append(valueSeperator);

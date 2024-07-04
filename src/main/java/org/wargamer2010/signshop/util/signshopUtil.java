@@ -27,6 +27,7 @@ import org.wargamer2010.signshop.operations.SignShopOperationListItem;
 import org.wargamer2010.signshop.player.PlayerCache;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 import org.wargamer2010.signshop.specialops.SignShopSpecialOp;
+import scala.concurrent.impl.FutureConvertersImpl;
 
 import java.util.*;
 
@@ -101,8 +102,8 @@ public class signshopUtil {
         List<SignShopOperationListItem> SignShopOperations = new LinkedList<>();
         for(String sSignShopOp : operation) {
             List<String> bits = getParameters(sSignShopOp);
-            String op = bits.get(0);
-            bits.remove(0);
+            String op = bits.getFirst();
+            bits.removeFirst();
             SignShopOperation ssOP = getSignShopBlock(op);
             if(ssOP == null)
                 return null;
@@ -127,7 +128,7 @@ public class signshopUtil {
             Enchantment enchantment;
             int enchantmentLevel;
             String[] enchantmentPair = singleEnchantmentString.split("\\|");
-            enchantment = Enchantment.getByKey(NamespacedKey.minecraft(enchantmentPair[0].toLowerCase()));
+            enchantment = Enchantment.getByKey(NamespacedKey.minecraft(enchantmentPair[0].toLowerCase()));//TODO
             try {
                 enchantmentLevel = Integer.parseInt(enchantmentPair[1]);
                 enchantmentsMap.put(enchantment, enchantmentLevel);
@@ -328,15 +329,15 @@ public class signshopUtil {
                 return false;
             }
         }
-        if(playerGroups.size() > 0 && seller.isOwner(player)) {
+        if(!playerGroups.isEmpty() && seller.isOwner(player)) {
             player.sendMessage(signShopConfig.getError("restricted_but_owner", null));
             return false;
         } else
-            return (playerGroups.size() > 0 && !player.isOp());
+            return (!playerGroups.isEmpty() && !player.isOp());
     }
 
     public static Boolean lineIsEmpty(String line) {
-        return (line == null || line.length() == 0);
+        return (line == null || line.isEmpty());
     }
 
     public static List<Block> getSignsFromMisc(Seller seller, String miscprop) {
@@ -645,8 +646,14 @@ public class signshopUtil {
     }
 
     private static void sendSignUpdate(Player player, Sign sign){
-        //noinspection UnstableApiUsage
-        player.sendBlockUpdate(sign.getLocation(), sign);
+        try {
+            //noinspection UnstableApiUsage
+            player.sendBlockUpdate(sign.getLocation(), sign);
+        } catch (Exception e) {
+            if (signShopConfig.debugging()) {
+                e.printStackTrace();
+            }
+        }
     }
 
 

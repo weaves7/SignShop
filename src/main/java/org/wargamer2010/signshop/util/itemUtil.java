@@ -235,7 +235,7 @@ public class itemUtil {
                 continue;
             ItemStack isBackup = getSingleAmountOfStack(item);
 
-            if(item.getEnchantments().size() > 0)
+            if(!item.getEnchantments().isEmpty())
                 enchantments.put(isBackup, item.getEnchantments());
             if(items.containsKey(isBackup)) {
                 tempAmount = (items.get(isBackup) + item.getAmount());

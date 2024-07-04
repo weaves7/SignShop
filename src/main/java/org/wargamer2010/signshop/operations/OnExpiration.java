@@ -31,7 +31,7 @@ public class OnExpiration extends SignShopEventHandler {
             return null;
         }
 
-        return blocks.get(0);
+        return blocks.getFirst();
     }
 
     @Override

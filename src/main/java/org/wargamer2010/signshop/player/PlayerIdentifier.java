@@ -90,7 +90,6 @@ public class PlayerIdentifier { //TODO completely switch over to UUID support in
     /**
      * This method should not be used, lookup by name has been deprecated
      * But it can be used for transition purposes
-     *
      * Primarily used to convert the names to UUID in the sellers.yml
      *
      * @param name Player name

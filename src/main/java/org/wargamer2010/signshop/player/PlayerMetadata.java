@@ -77,7 +77,7 @@ public class PlayerMetadata {
             }
             set.close();
 
-            if (toConverts.size() > 0) {
+            if (!toConverts.isEmpty()) {
                 SignShop.log("Starting conversion from Player name to UUID for PlayerMeta table. Please be patient and don't interrupt the process.", Level.INFO);
             }
 

@@ -222,7 +222,7 @@ public class SignShopArguments implements IMessagePartContainer {
     }
 
     public String getFirstOperationParameter() {
-        return hasOperationParameters() ? operationParameters.get(0) : "";
+        return hasOperationParameters() ? operationParameters.getFirst() : "";
     }
 
     public SignShopArgumentsType getArgumentType() {

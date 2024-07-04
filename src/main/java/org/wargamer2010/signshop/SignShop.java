@@ -243,7 +243,7 @@ public class SignShop extends JavaPlugin {
         }
 
         //Warn if spawn-protection is enabled
-        if(Bukkit.getSpawnRadius() > 0 && Bukkit.getOperators().size() > 0){
+        if(Bukkit.getSpawnRadius() > 0 && !Bukkit.getOperators().isEmpty()){
             int opsCount = Bukkit.getOperators().size();
             String opsPhrase = (opsCount > 1) ? ("are " + opsCount + " ops!") : ("is " + opsCount + " op!");
             log("Spawn-Protection is set to " + Bukkit.getSpawnRadius() + " in server.properties and there " + opsPhrase, Level.WARNING);

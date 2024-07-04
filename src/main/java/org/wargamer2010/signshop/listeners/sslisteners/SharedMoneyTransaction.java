@@ -73,16 +73,16 @@ public class SharedMoneyTransaction implements Listener {
             return shares;
         }
         if(tempperc.size() == 2 && (signshopUtil.lineIsEmpty(sign.getSide(Side.FRONT).getLine(1)) || lineIsEmpty(sign.getSide(Side.FRONT).getLine(2)))) {
-            shares.put((sign.getSide(Side.FRONT).getLine(1) == null ? sign.getSide(Side.FRONT).getLine(2) : sign.getSide(Side.FRONT).getLine(1)), tempperc.get(0));
+            shares.put((sign.getSide(Side.FRONT).getLine(1) == null ? sign.getSide(Side.FRONT).getLine(2) : sign.getSide(Side.FRONT).getLine(1)), tempperc.getFirst());
             ssPlayer.sendMessage("The second percentage will be ignored as only one username is given.");
         } else if(tempperc.size() == 1 && !signshopUtil.lineIsEmpty(sign.getSide(Side.FRONT).getLine(2))) {
-            shares.put(sign.getSide(Side.FRONT).getLine(1), tempperc.get(0));
+            shares.put(sign.getSide(Side.FRONT).getLine(1), tempperc.getFirst());
             ssPlayer.sendMessage("The second username will be ignored as only one percentage is given.");
         } else if(tempperc.size() == 2) {
             shares.put(sign.getSide(Side.FRONT).getLine(1), tempperc.get(0));
             shares.put(sign.getSide(Side.FRONT).getLine(2), tempperc.get(1));
         } else if(tempperc.size() == 1) {
-            shares.put(sign.getSide(Side.FRONT).getLine(1), tempperc.get(0));
+            shares.put(sign.getSide(Side.FRONT).getLine(1), tempperc.getFirst());
         }
         return shares;
     }

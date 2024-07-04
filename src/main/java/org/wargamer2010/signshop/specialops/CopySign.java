@@ -57,31 +57,31 @@ public class CopySign implements SignShopSpecialOp {
 
         boolean signsFrontAndBackWereTheSame =Arrays.equals(sToChangeFront,sToChangeBack);
 
-        if(sNewSignFront[1] != null && sNewSignFront[1].length() > 0)
+        if(sNewSignFront[1] != null && !sNewSignFront[1].isEmpty())
             signToChange.getSide(Side.FRONT).setLine(1, sNewSignFront[1]);
-        if(sNewSignFront[2] != null && sNewSignFront[2].length() > 0)
+        if(sNewSignFront[2] != null && !sNewSignFront[2].isEmpty())
             signToChange.getSide(Side.FRONT).setLine(2, sNewSignFront[2]);
-        if(sNewSignFront[3] != null && sNewSignFront[3].length() > 0)
+        if(sNewSignFront[3] != null && !sNewSignFront[3].isEmpty())
             signToChange.getSide(Side.FRONT).setLine(3, sNewSignFront[3]);
 
         if (signsFrontAndBackWereTheSame) {
-            if(sNewSignFront[1] != null && sNewSignFront[1].length() > 0)
+            if(sNewSignFront[1] != null && !sNewSignFront[1].isEmpty())
                 signToChange.getSide(Side.BACK).setLine(1, sNewSignFront[1]);
-            if(sNewSignFront[2] != null && sNewSignFront[2].length() > 0)
+            if(sNewSignFront[2] != null && !sNewSignFront[2].isEmpty())
                 signToChange.getSide(Side.BACK).setLine(2, sNewSignFront[2]);
-            if(sNewSignFront[3] != null && sNewSignFront[3].length() > 0)
+            if(sNewSignFront[3] != null && !sNewSignFront[3].isEmpty())
                 signToChange.getSide(Side.BACK).setLine(3, sNewSignFront[3]);
         }
 
         signToChange.update();
         String price;
-        if(sNewSignFront[3] != null && sNewSignFront[3].length() > 0)
+        if(sNewSignFront[3] != null && !sNewSignFront[3].isEmpty())
             price = sNewSignFront[3];
         else
             price = sToChangeFront[3];
 
         String sOperation;
-        if (sNewSignFront[0] != null && sNewSignFront[0].length() > 0)
+        if (sNewSignFront[0] != null && !sNewSignFront[0].isEmpty())
             sOperation = signshopUtil.getOperation(sNewSignFront[0]);
         else
             sOperation = signshopUtil.getOperation(sToChangeFront[0]);
@@ -129,7 +129,7 @@ public class CopySign implements SignShopSpecialOp {
                 return true;
             }
 
-            if(sNewSignFront[0] != null && sNewSignFront[0].length() > 0) {
+            if(sNewSignFront[0] != null && !sNewSignFront[0].isEmpty()) {
                 signToChange = ((Sign) shopSign.getState());
                 signToChange.getSide(Side.FRONT).setLine(0, sNewSignFront[0]);
                 if (signsFrontAndBackWereTheSame){

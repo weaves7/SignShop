@@ -22,7 +22,7 @@ public class TimedCommandListener implements Listener {
                 List<String> commands = SignShop.getInstance().getSignShopConfig().getDelayedCommands().get(cmd.getShopType().toLowerCase());
                 for (String command : commands) {
                     String sCommand = command;
-                    if (sCommand != null && sCommand.length() > 0) {
+                    if (sCommand != null && !sCommand.isEmpty()) {
                         sCommand = SignShop.getInstance().getSignShopConfig().fillInBlanks(sCommand, cmd.getMessageParts());
                         sCommand = SignShop.getInstance().getSignShopConfig().fillInBlanks(sCommand, cmd.getMessageParts());
                         if (cmd.getCommandType().equals("asOriginalUser"))

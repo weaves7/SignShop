@@ -31,7 +31,7 @@ public class runCommand implements SignShopOperation {
             for (String command : commands) {
                 boolean ok = true;
                 String sCommand = command;
-                if (sCommand != null && sCommand.length() > 0) {
+                if (sCommand != null && !sCommand.isEmpty()) {
                     sCommand = SignShop.getInstance().getSignShopConfig().fillInBlanks(sCommand, ssArgs.getMessageParts());
                     sCommand = SignShop.getInstance().getSignShopConfig().fillInBlanks(sCommand, ssArgs.getMessageParts());
                     if (ssArgs.isOperationParameter("asOriginalUser")) {

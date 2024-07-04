@@ -43,27 +43,31 @@ public class SignShopBlockListener implements Listener {
         for (BlockFace face : checkFaces) {
             relativeBlock = originalBlock.getRelative(face);
             relativeBlockData = relativeBlock.getBlockData();
-            if (relativeBlockData instanceof Switch && relativeBlockData instanceof FaceAttachable ) {
-               FaceAttachable attachableSwitch = (FaceAttachable) relativeBlockData;
-                if (attachableSwitch.getAttachedFace() == FaceAttachable.AttachedFace.FLOOR
-                        && relativeBlock.getRelative(BlockFace.DOWN).equals(originalBlock)) {
-                    attachables.add(relativeBlock);
+            BlockData finalRelativeBlockData = relativeBlockData;
+            switch (relativeBlockData) {
+                case Switch aSwitch when finalRelativeBlockData instanceof FaceAttachable -> {
+                    FaceAttachable attachableSwitch = (FaceAttachable) finalRelativeBlockData;
+                    if (attachableSwitch.getAttachedFace() == FaceAttachable.AttachedFace.FLOOR
+                            && relativeBlock.getRelative(BlockFace.DOWN).equals(originalBlock)) {
+                        attachables.add(relativeBlock);
+                    }
                 }
-            }
-            else if (relativeBlockData instanceof WallSign) {
-                WallSign wallSign = (WallSign) relativeBlockData;
-                if (relativeBlock.getRelative(wallSign.getFacing().getOppositeFace()).equals(originalBlock)) { //may need to add getOppositeFace
-                    attachables.add(relativeBlock);
+                case WallSign wallSign -> {
+                    if (relativeBlock.getRelative(wallSign.getFacing().getOppositeFace()).equals(originalBlock)) { //may need to add getOppositeFace
+                        attachables.add(relativeBlock);
+                    }
                 }
-            }
-            else if (relativeBlockData instanceof Sign) {
-                if (relativeBlock.getRelative(BlockFace.DOWN).equals(originalBlock)) {
-                    attachables.add(relativeBlock);
+                case Sign sign -> {
+                    if (relativeBlock.getRelative(BlockFace.DOWN).equals(originalBlock)) {
+                        attachables.add(relativeBlock);
+                    }
                 }
-            }
-            else if (relativeBlockData instanceof HangingSign) {
-                if (relativeBlock.getRelative(BlockFace.UP).equals(originalBlock)) {
-                    attachables.add(relativeBlock);
+                case HangingSign hangingSign -> {
+                    if (relativeBlock.getRelative(BlockFace.UP).equals(originalBlock)) {
+                        attachables.add(relativeBlock);
+                    }
+                }
+                default -> {
                 }
             }
         }
