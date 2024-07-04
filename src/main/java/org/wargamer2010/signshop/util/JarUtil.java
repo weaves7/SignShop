@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.concurrent.locks.ReentrantLock;
@@ -26,7 +27,7 @@ public class JarUtil {
             File libLocation = new File(SignShop.getInstance().getDataFolder(), "lib" + File.separator + filename);
             if (!libLocation.exists())
                 getDriver(libLocation);
-            JarUtil.addClassPath(new URL("jar:file:" + libLocation.getPath() + "!/"));//TODO
+            JarUtil.addClassPath(URI.create("jar:file:" + libLocation.getPath() + "!/").toURL());
             return true;
         } catch (IOException ignored) {
         } finally {

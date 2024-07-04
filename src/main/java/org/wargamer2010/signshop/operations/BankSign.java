@@ -48,7 +48,7 @@ public class BankSign implements SignShopOperation {
             String sLast = names.getLast();
             for(String sTemp : names) {
                 if(first) first = false;
-                else if (!sLast.equals(sTemp)) profits.append(", ");//TODO fix this
+                else if (!sLast.equals(sTemp)) profits.append(", ");
                 else if (sLast.equals(sTemp)) profits.append(" and ");
                 profits.append(sTemp);
             }

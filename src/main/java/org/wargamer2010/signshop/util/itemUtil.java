@@ -207,7 +207,7 @@ public class itemUtil {
         return sb.toString();
     }
 
-    @SuppressWarnings("deprecation")
+   @SuppressWarnings("deprecation")
     private static ItemStack getSingleAmountOfStack(ItemStack item) {
         if(item == null)
             return null;

@@ -27,7 +27,7 @@ import org.wargamer2010.signshop.operations.SignShopOperationListItem;
 import org.wargamer2010.signshop.player.PlayerCache;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 import org.wargamer2010.signshop.specialops.SignShopSpecialOp;
-import scala.concurrent.impl.FutureConvertersImpl;
+
 
 import java.util.*;
 
@@ -121,21 +121,18 @@ public class signshopUtil {
     public static Map<Enchantment, Integer> convertStringToEnchantments(String multiEnchantmentString) {
         Map<Enchantment, Integer> enchantmentsMap = new HashMap<>();
         String[] enchantmentStrings = multiEnchantmentString.split(";");
-        if (enchantmentStrings.length == 0)
-            return enchantmentsMap;
 
         for (String singleEnchantmentString : enchantmentStrings) {
             Enchantment enchantment;
             int enchantmentLevel;
             String[] enchantmentPair = singleEnchantmentString.split("\\|");
-            enchantment = Enchantment.getByKey(NamespacedKey.minecraft(enchantmentPair[0].toLowerCase()));//TODO
+            enchantment = Registry.ENCHANTMENT.get(NamespacedKey.minecraft(enchantmentPair[0].toLowerCase()));
             try {
                 enchantmentLevel = Integer.parseInt(enchantmentPair[1]);
                 enchantmentsMap.put(enchantment, enchantmentLevel);
             } catch (NumberFormatException ignored) {
 
             }
-
         }
         return enchantmentsMap;
     }

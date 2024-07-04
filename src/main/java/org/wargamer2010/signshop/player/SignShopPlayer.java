@@ -49,7 +49,7 @@ public class SignShopPlayer {
      * This is a legacy constructor and is purely here for backwards compatibility
      *
      * @param name Player name
-     * @deprecated Lookup by name has been deprecated so use the PlayerIdentifier alternative in stead
+     * @deprecated Lookup by name has been deprecated so use the PlayerIdentifier alternative instead
      */
     @Deprecated
     public SignShopPlayer(String name) {
@@ -324,8 +324,6 @@ public class SignShopPlayer {
         if (sGroups == null) return fPricemod;
 
         boolean firstRun = true;
-        if (sGroups.length == 0)
-            return fPricemod;
         for (String sGroup1 : sGroups) {
             String sGroup = sGroup1.toLowerCase();
             if (SignShop.getInstance().getSignShopConfig().getPriceMultipliers().containsKey(sGroup) && SignShop.getInstance().getSignShopConfig().getPriceMultipliers().get(sGroup).containsKey(sOperation)) {

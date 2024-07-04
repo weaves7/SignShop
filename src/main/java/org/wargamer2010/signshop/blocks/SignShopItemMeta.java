@@ -105,9 +105,11 @@ public class SignShopItemMeta {
         if(displayname.isEmpty())
             displayname = (txtcolor + customcolor + normal + txtcolor);
 
-        //noinspection deprecation TODO remove deprecation
-        if(stack.getType().getMaxDurability() >= 30 && stack.getDurability() != 0)
-            displayname = (" Damaged " + displayname);
+        if (stack.getItemMeta() instanceof Damageable) {
+            Damageable damageable = (Damageable) stack.getItemMeta();
+            if(stack.getType().getMaxDurability() >= 30 && damageable.hasDamage())
+                displayname = (" Damaged " + displayname);
+        }
         if(!stack.getEnchantments().isEmpty())
             displayname += (txtcolor + " " + itemUtil.enchantmentsToMessageFormat(stack.getEnchantments()));
 

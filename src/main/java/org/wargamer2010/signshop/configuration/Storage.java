@@ -147,7 +147,7 @@ public class Storage implements Listener {
                 storageEx.setReason(StorageExceptionReason.EMPTY_WORLD_STRING);
                 throw storageEx;
             }
-            seller_shopworld = tempList.get(0);
+            seller_shopworld = tempList.getFirst();
             storageEx.setWorld(seller_shopworld);
             if(Bukkit.getServer().getWorld(seller_shopworld) == null) {
                 storageEx.setReason(StorageExceptionReason.NULL_WORLD);
@@ -158,7 +158,7 @@ public class Storage implements Listener {
                 storageEx.setReason(StorageExceptionReason.EMPTY_OWNER_STRING);
                 throw storageEx;
             }
-            seller_owner = PlayerIdentifier.getPlayerFromString(tempList.get(0));
+            seller_owner = PlayerIdentifier.getPlayerFromString(tempList.getFirst());
             if(seller_owner == null){
                 storageEx.setReason(StorageExceptionReason.NULL_OWNER);
                 throw storageEx;
@@ -172,7 +172,7 @@ public class Storage implements Listener {
             World world = Bukkit.getServer().getWorld(seller_shopworld);
 
             try {
-                seller_sign = signshopUtil.convertStringToLocation(tempList.get(0), world).getBlock();
+                seller_sign = signshopUtil.convertStringToLocation(tempList.getFirst(), world).getBlock();
             } catch(Exception ex) {
                 SignShop.log("Caught an unexpected exception: " + ex.getMessage(), Level.WARNING);
                 // May have caught a FileNotFoundException originating from the chunkloader
@@ -211,7 +211,7 @@ public class Storage implements Listener {
 
             try {
                 SignShop.log(getInvalidError(
-                        SignShop.getInstance().getSignShopConfig().getError("shop_removed", null), getSetting(sellerSettings, "sign").get(0), getSetting(sellerSettings, "shopworld").get(0)), Level.INFO);
+                        SignShop.getInstance().getSignShopConfig().getError("shop_removed", null), getSetting(sellerSettings, "sign").getFirst(), getSetting(sellerSettings, "shopworld").get(0)), Level.INFO);
             } catch(StorageException lastex) {
                 SignShop.getInstance().debugMessage("StorageException Reason: "+caughtex.getReason());
                 SignShop.log(SignShop.getInstance().getSignShopConfig().getError("shop_removed", null), Level.INFO);
