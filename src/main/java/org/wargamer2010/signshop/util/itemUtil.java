@@ -257,6 +257,16 @@ public class itemUtil {
                 if(book != null && (book.getAuthor() != null || book.getTitle() != null))
                     sItems.append(" (").append(book.getTitle() == null ? "Unknown" : book.getTitle()).append(" by ").append(book.getAuthor() == null ? "Unknown" : book.getAuthor()).append(")");
             }
+            if (entry.getKey().hasItemMeta() && entry.getKey().getItemMeta().hasLore()){
+                sItems.append(signShopConfig.getTextColor()).append("<").append(ChatColor.RESET);
+                boolean firstLore = true;
+                for (String loreLine : entry.getKey().getItemMeta().getLore()){
+                    if (firstLore) firstLore = false;
+                    else sItems.append(signShopConfig.getTextColor()).append(", ").append(ChatColor.RESET);
+                    sItems.append(loreLine);
+                }
+                sItems.append(signShopConfig.getTextColor()).append("> ").append(ChatColor.RESET);
+            }
             sItems.append(ChatColor.WHITE);
         }
 
