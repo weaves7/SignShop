@@ -6,7 +6,11 @@
       <option name="DONT_REPORT_TRUE_ASSERT_STATEMENTS" value="false" />
     </inspection_tool>
     <inspection_tool class="ConstantValue" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="DuplicatedCode" enabled="false" level="WEAK WARNING" enabled_by_default="false" />
     <inspection_tool class="EnhancedSwitchMigration" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="ExtractMethodRecommender" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="minLength" value="742" />
+    </inspection_tool>
     <inspection_tool class="FieldCanBeLocal" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="IgnoreResultOfCall" enabled="false" level="WARNING" enabled_by_default="false">
       <option name="m_reportAllNonLibraryCalls" value="false" />
@@ -93,6 +97,39 @@
       <option name="processComments" value="true" />
     </inspection_tool>
     <inspection_tool class="ThrowablePrintStackTrace" enabled="false" level="WARNING" enabled_by_default="false" />
+    <inspection_tool class="VulnerableLibrariesLocal" enabled="false" level="WARNING" enabled_by_default="false">
+      <option name="isIgnoringEnabled" value="true" />
+      <option name="ignoredModules">
+        <list>
+          <option value="SignShop" />
+          <option value="SignShop" />
+          <option value="SignShop" />
+          <option value="SignShop" />
+          <option value="SignShop" />
+          <option value="SignShop" />
+        </list>
+      </option>
+      <option name="ignoredPackages">
+        <list>
+          <option value="org.xerial:sqlite-jdbc:3.25.2" />
+          <option value="commons-lang:commons-lang:2.6" />
+          <option value="junit:junit:4.10" />
+          <option value="org.scala-lang:scala-library:2.13.1" />
+          <option value="org.apache.httpcomponents:httpclient:4.5.10" />
+          <option value="commons-codec:commons-codec:1.11" />
+        </list>
+      </option>
+      <option name="ignoredReasons">
+        <list>
+          <option value="Other" />
+          <option value="Other" />
+          <option value="Other" />
+          <option value="Other" />
+          <option value="Other" />
+          <option value="Other" />
+        </list>
+      </option>
+    </inspection_tool>
     <inspection_tool class="WrapperTypeMayBePrimitive" enabled="false" level="WARNING" enabled_by_default="false" />
     <inspection_tool class="unused" enabled="false" level="WARNING" enabled_by_default="false" checkParameterExcludingHierarchy="false">
       <option name="LOCAL_VARIABLE" value="true" />

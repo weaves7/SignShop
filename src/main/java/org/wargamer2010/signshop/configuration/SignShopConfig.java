@@ -86,6 +86,7 @@ public class SignShopConfig {
     private Material updateMaterial = Material.getMaterial("INK_SAC");
     private Material destroyMaterial = Material.getMaterial("GOLDEN_AXE");
     private Material inspectMaterial = Material.getMaterial("WRITABLE_BOOK");
+    private List<String> DebugClasses = new ArrayList<>();
 
 
     public SignShopConfig() {
@@ -156,6 +157,7 @@ public class SignShopConfig {
         setupHooks();
         setupSpecialsOps();
         setupLinkables();
+        setupDebugClasses();
     }
 
     public String getPreferredLanguage() {
@@ -672,6 +674,15 @@ public class SignShopConfig {
         BlacklistedBackOfSignText = new ArrayList<>();
         config.getStringList("BlacklistedBackOfSignText").forEach(s -> BlacklistedBackOfSignText.add(ChatColor.stripColor(s.toLowerCase())));
     }
+    private void setupDebugClasses() {
+        DebugClasses = new ArrayList<>();
+        config.getStringList("DebugClasses").forEach(s -> DebugClasses.add(ChatColor.stripColor(s.toUpperCase())));
+
+    }
+
+    public boolean weAreDebuggingClass(String className) {
+       return DebugClasses.contains("ALL") || DebugClasses.contains(className.toUpperCase());
+    }
 
     public Boolean stringIsOnBackOfSignTextBlacklist(String string){
         return BlacklistedBackOfSignText.contains(string);
@@ -951,6 +962,10 @@ public class SignShopConfig {
                 itemUtil.updateFormattedMaterial(matKey, ChatColor.translateAlternateColorCodes(getColorCode(), customName));
             }
         }
+    }
+
+    public String getDebugClasses() {
+        return DebugClasses.toString();
     }
 
 

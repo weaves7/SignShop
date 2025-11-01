@@ -1,4 +1,4 @@
-package org.wargamer2010.signshop.configuration;
+package org.wargamer2010.signshop.data;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -16,6 +16,8 @@ import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.Seller;
 import org.wargamer2010.signshop.SignShop;
+import org.wargamer2010.signshop.configuration.FileSaveWorker;
+import org.wargamer2010.signshop.configuration.configUtil;
 import org.wargamer2010.signshop.player.PlayerIdentifier;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 import org.wargamer2010.signshop.util.itemUtil;
@@ -195,7 +197,7 @@ public class Storage implements Listener {
                 }
             }
         } catch(StorageException caughtex) {
-            SignShop.getInstance().debugMessage("StorageException Reason: "+caughtex.getReason());
+            SignShop.getInstance().debugClassMessage("StorageException Reason: "+caughtex.getReason(),"Storage");
             if(caughtex.getReason() == StorageExceptionReason.NULL_WORLD){
                 deferredSellers.put(key, sellerSettings);
                 return false; // World may not even be loaded for this startup. May be loaded by a plugin later, or future startup.
@@ -213,7 +215,7 @@ public class Storage implements Listener {
                 SignShop.log(getInvalidError(
                         SignShop.getInstance().getSignShopConfig().getError("shop_removed", null), getSetting(sellerSettings, "sign").getFirst(), getSetting(sellerSettings, "shopworld").get(0)), Level.INFO);
             } catch(StorageException lastex) {
-                SignShop.getInstance().debugMessage("StorageException Reason: "+caughtex.getReason());
+                SignShop.getInstance().debugClassMessage("StorageException Reason: "+caughtex.getReason(), "Storage");
                 SignShop.log(SignShop.getInstance().getSignShopConfig().getError("shop_removed", null), Level.INFO);
             }
             invalidShops.put(key, sellerSettings);
@@ -263,6 +265,7 @@ public class Storage implements Listener {
 
         for(Map.Entry<String,HashMap<String,List<String>>> shopSettings : tempSellers.entrySet())
         {
+            SignShop.getInstance().debugClassMessage("Loading shop: "+ shopSettings.getKey(),"Storage");
             needSave = !loadSellerFromSettings(shopSettings.getKey(), shopSettings.getValue()) || needSave;
         }
 

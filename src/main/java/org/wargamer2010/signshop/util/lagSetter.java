@@ -5,7 +5,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.data.type.Switch;
 import org.wargamer2010.signshop.Seller;
 import org.wargamer2010.signshop.SignShop;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 
 public class lagSetter implements Runnable{
     private final Block blockToChange;

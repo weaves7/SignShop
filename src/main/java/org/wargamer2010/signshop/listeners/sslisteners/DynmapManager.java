@@ -1,5 +1,5 @@
 
-package org.wargamer2010.signshop.listeners.sslisteners;
+/*package org.wargamer2010.signshop.listeners.sslisteners;TODO
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -7,14 +7,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
-import org.dynmap.DynmapAPI;
 import org.dynmap.markers.Marker;
 import org.dynmap.markers.MarkerAPI;
 import org.dynmap.markers.MarkerIcon;
 import org.dynmap.markers.MarkerSet;
 import org.wargamer2010.signshop.Seller;
 import org.wargamer2010.signshop.SignShop;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.events.SSCreatedEvent;
 import org.wargamer2010.signshop.events.SSDestroyedEvent;
 import org.wargamer2010.signshop.events.SSDestroyedEventType;
@@ -140,4 +139,4 @@ public class DynmapManager implements Listener {
 
         ManageMarkerForSeller(event.getSign().getLocation(), event.getPlayer().getName(), event.getPlayer().getWorld().getName(), false);
     }
-}
+}*/

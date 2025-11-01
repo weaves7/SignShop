@@ -5,7 +5,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.block.sign.Side;
 import org.wargamer2010.signshop.SignShop;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.LinkedList;

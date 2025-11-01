@@ -1,5 +1,5 @@
 
-package org.wargamer2010.signshop.blocks;
+package org.wargamer2010.signshop.data;
 
 import org.wargamer2010.signshop.SignShop;
 

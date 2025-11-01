@@ -19,7 +19,7 @@ import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.Vault;
 import org.wargamer2010.signshop.configuration.LinkableMaterial;
 import org.wargamer2010.signshop.configuration.SignShopConfig;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.events.*;
 import org.wargamer2010.signshop.operations.SignShopArguments;
 import org.wargamer2010.signshop.operations.SignShopOperation;

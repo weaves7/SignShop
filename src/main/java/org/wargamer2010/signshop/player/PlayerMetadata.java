@@ -3,7 +3,7 @@ package org.wargamer2010.signshop.player;
 
 import org.bukkit.plugin.Plugin;
 import org.wargamer2010.signshop.SignShop;
-import org.wargamer2010.signshop.blocks.SSDatabase;
+import org.wargamer2010.signshop.data.SSDatabase;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;

@@ -7,7 +7,7 @@ import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.Seller;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.Vault;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.util.itemUtil;
 
 import java.util.LinkedHashMap;
@@ -372,10 +372,8 @@ public class SignShopPlayer {
     public ItemStack[] getInventoryContents() {
         if (getPlayer() == null)
             return new ItemStack[0];
-        ItemStack[] temp = getPlayer().getInventory().getContents();
-        if (SignShop.getInstance().getSignShopConfig().getEnableWrittenBookFix())
-            itemUtil.fixBooks(temp); //TODO do we even need to fix books anymore?
-        return temp;
+//We may need to bring back the fixBooks method here if books in a player's inventory don't work now?
+        return getPlayer().getInventory().getContents();
     }
 
     public void setInventoryContents(ItemStack[] newContents) {

@@ -16,17 +16,16 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.wargamer2010.signshop.Seller;
-import org.wargamer2010.signshop.SignShop;
-import org.wargamer2010.signshop.blocks.*;
+import org.wargamer2010.signshop.data.*;
 import org.wargamer2010.signshop.configuration.SignShopConfig;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.operations.SignShopArguments;
 import org.wargamer2010.signshop.operations.SignShopArgumentsType;
 import org.wargamer2010.signshop.operations.SignShopOperationListItem;
 import org.wargamer2010.signshop.player.VirtualInventory;
+import org.wargamer2010.signshop.data.serialization.ItemSerializer;
 
 import java.util.*;
-import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -103,8 +102,8 @@ public class itemUtil {
         }
         return null;
     }
-
-    public static void fixBooks(ItemStack[] stacks) {//TODO this causes a ton of lag do we really even need this?
+@Deprecated
+    public static void fixBooks(ItemStack[] stacks) {//TODO remove later
         if (stacks == null || !signShopConfig.getEnableWrittenBookFix())
             return;
 
@@ -127,6 +126,39 @@ public class itemUtil {
                 stack.setItemMeta(copyMeta);
             }
         }
+    }
+    /**
+     * Fixes book metadata for items deserialized from legacy format.
+     * Only needed for backward compatibility with old shops.
+     * This replicates the fixBooks() logic for a single item.
+     *
+     * @param item The ItemStack to fix (must be WRITTEN_BOOK)
+     */
+    public static void fixBookLegacy(ItemStack item) {
+        if (item == null || !signShopConfig.getEnableWrittenBookFix()) {
+            return;
+        }
+
+        if (item.getType() != Material.WRITTEN_BOOK || !item.hasItemMeta() || !(item.getItemMeta() instanceof BookMeta)) {
+            return;
+        }
+
+        // Same logic as fixBooks() but for single item
+        ItemStack copy = new ItemStack(Material.WRITTEN_BOOK);
+
+        BookFactory.getBookItem(copy).copyFrom(BookFactory.getBookItem(item));
+
+        ItemMeta copyMeta = copy.getItemMeta();
+        ItemMeta realMeta = item.getItemMeta();
+
+        copyMeta.setDisplayName(realMeta.getDisplayName());
+        copyMeta.setLore(realMeta.getLore());
+
+        for (Map.Entry<Enchantment, Integer> entry : realMeta.getEnchants().entrySet()) {
+            copyMeta.addEnchant(entry.getKey(), entry.getValue(), true);
+        }
+
+        item.setItemMeta(copyMeta);
     }
 
     public static String binaryToRoman(int binary) {
@@ -220,7 +252,7 @@ public class itemUtil {
         safelyAddEnchantments(isBackup, item.getEnchantments());
         return tags.copyTags(item, isBackup);
     }
-
+//TODO https://www.spigotmc.org/threads/1-20-show-items-in-chat-without-nms.616388/#post-4631549
    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     public static String itemStackToString(ItemStack[] isStacks) {
         if(isStacks == null || isStacks.length == 0)
@@ -485,45 +517,26 @@ public class itemUtil {
         ItemStack[] itemStacks = new ItemStack[itemStringList.size()];
 
         for (int i = 0; i < itemStringList.size(); i++) {
-            try {
-                String base64prop = itemStringList.get(i);
-                if (base64prop != null) {
-                    ItemStack[] convertedStacks = BukkitSerialization.itemStackArrayFromBase64(base64prop);
-                    if(convertedStacks.length > 0 && convertedStacks[0] != null) {
-                        itemStacks[i] = convertedStacks[0];
-                    }
-                }
-            } catch (Exception e) {
-                if (signShopConfig.debugging()) {
-                    SignShop.log("Error converting strings to item stacks.", Level.WARNING);
-                }
-            }
+            itemStacks[i] = ItemSerializer.deserialize(itemStringList.get(i));
         }
-
-
         return itemStacks;
     }
 
     public static String[] convertItemStacksToString(ItemStack[] itemStackArray) {
         List<String> itemStringList = new ArrayList<>();
-        if (itemStackArray == null)
-            return new String[1];
-
-        ItemStack currentItemStack;
-        for (ItemStack itemStack : itemStackArray) {
-            if (itemStack != null) {
-                currentItemStack = itemStack;
-                ItemStack[] stacks = new ItemStack[1];
-                stacks[0] = currentItemStack;
-
-                itemStringList.add(BukkitSerialization.itemStackArrayToBase64(stacks));
-
-            }
-
+        if (itemStackArray == null) {
+            return new String[0];
         }
-        String[] items = new String[itemStringList.size()];
-        itemStringList.toArray(items);
-        return items;
+
+        for (ItemStack item : itemStackArray) {
+            if (item != null) {
+                String serialized = ItemSerializer.serialize(item);
+                if (serialized != null) {
+                    itemStringList.add(serialized);
+                }
+            }
+        }
+        return itemStringList.toArray(new String[0]);
     }
 
 

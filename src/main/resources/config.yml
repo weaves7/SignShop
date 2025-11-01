@@ -30,6 +30,9 @@ MetricsEnabled: true
 # Should verbose debugging messages be enabled? This could get very spammy, or it may do nothing.
 Debugging: false
 
+# List of SignShop classes you are debugging or ALL for all of them. Not all classes have this feature. Debugging must also be set to true.
+DebugClasses: []
+
 # Use an internationally compatible currency parser that supports ',' and '.' decimal separators.  This may, but likely will not be, incompatible with existing servers.
 # This will be automatically enabled on new servers, and disabled for servers that have existing shops. (true, false or auto by Default)
 AllowCommaDecimalSeparator: auto

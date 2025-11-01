@@ -1,5 +1,5 @@
 
-package org.wargamer2010.signshop.blocks;
+package org.wargamer2010.signshop.data;
 
 import com.google.common.collect.ImmutableList;
 import org.bukkit.ChatColor;
@@ -132,17 +132,45 @@ public class SignShopItemMeta {
                 LeatherArmorMeta leathermeta = (LeatherArmorMeta) meta;
                 return (ColorUtil.getColorAsString(leathermeta.getColor()) + " Colored " + getDisplayName(stack));
             } else if(type == MetaType.Skull) {
-                String postfix = "'s Head";
                 SkullMeta skullmeta = (SkullMeta) meta;
-                if(skullmeta.getOwningPlayer() !=null && skullmeta.getOwningPlayer().getName() != null) {
-                    // Name coloring support had to be dropped since there is no more link between
-                    // the skull owner and the actual player
-                    return (skullmeta.getOwningPlayer().getName() + postfix);
-                } else {
-                    // We can no longer get a pretty name by ID (SKULL_ITEM isn't pretty, is it?)
-                    // So we'll have to rely on the web lookup, if the server owner has it enabled
+
+                // Check display name first (most custom heads have one)
+                if (skullmeta.hasDisplayName()) {
                     return getDisplayName(stack);
                 }
+
+                // Try to get player name safely
+                try {
+                    if (skullmeta.getOwningPlayer() != null) {
+                        String playerName = skullmeta.getOwningPlayer().getName();
+                        if (playerName != null && !playerName.isEmpty()) {
+                            return playerName + "'s Head";
+                        }
+                    }
+                } catch (NoSuchElementException e) {
+                    // Custom texture head - player doesn't exist on server
+                    SignShop.getInstance().debugClassMessage(
+                            "Custom texture head detected (player doesn't exist on server)",
+                            "SignShopItemMeta"
+                    );
+                } catch (Exception e) {
+                    SignShop.getInstance().debugClassMessage(
+                            "Error getting player name for skull: " + e.getMessage(),
+                            "SignShopItemMeta"
+                    );
+                }
+
+                // Check if it's a custom texture head
+                try {
+                    if (skullmeta.hasOwner() || skullmeta.getOwnerProfile() != null) {
+                        return "Custom Player Head";
+                    }
+                } catch (Exception ignored) {
+                    // Continue to fallback
+                }
+
+                // Final fallback
+                return getDisplayName(stack);
             } else if(type == MetaType.Potion) {
                 PotionMeta potionMeta = (PotionMeta) meta;
                 StringBuilder nameBuilder = new StringBuilder();
@@ -439,11 +467,27 @@ public class SignShopItemMeta {
             else if(type == MetaType.Skull) {
                 SkullMeta skullmeta = (SkullMeta) meta;
                 if(skullmeta.hasOwner()) {
-                    String name = skullmeta.getOwningPlayer().getName();
-                    if (name == null){
-                        name = "null";
+                    try {
+                        String name = skullmeta.getOwningPlayer().getName();
+                        if (name != null && !name.isEmpty()) {
+                            metamap.put("owner", name);
+                        } else if (skullmeta.getOwningPlayer().getUniqueId() != null) {
+                            metamap.put("owner", skullmeta.getOwningPlayer().getUniqueId().toString());
+                        }
+                    } catch (NoSuchElementException e) {
+                        // Custom texture head
+                        metamap.put("owner", "custom_texture_head");
+                        SignShop.getInstance().debugClassMessage(
+                                "Custom texture head detected during serialization",
+                                "SignShopItemMeta"
+                        );
+                    } catch (Exception e) {
+                        SignShop.getInstance().debugClassMessage(
+                                "Error getting skull owner for serialization: " + e.getMessage(),
+                                "SignShopItemMeta"
+                        );
+                        metamap.put("owner", "unknown_error");
                     }
-                    metamap.put("owner",name);
                 }
             }
             else if(type == MetaType.Repairable) {

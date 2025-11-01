@@ -4,7 +4,7 @@ import org.bukkit.block.Block;
 import org.bukkit.event.HandlerList;
 import org.jetbrains.annotations.NotNull;
 import org.wargamer2010.signshop.Seller;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 
 import java.util.Objects;

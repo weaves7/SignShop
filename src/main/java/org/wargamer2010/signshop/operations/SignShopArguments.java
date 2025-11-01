@@ -66,7 +66,6 @@ public class SignShopArguments implements IMessagePartContainer {
         aAction.setRoot(ac);
         argumentType = type;
         setDefaultMessageParts();
-        fixBooks();
     }
 
     public SignShopArguments(Seller seller, SignShopPlayer player, SignShopArgumentsType type) {
@@ -84,31 +83,8 @@ public class SignShopArguments implements IMessagePartContainer {
         bfBlockFace.setRoot(BlockFace.SELF);
         argumentType = type;
         setDefaultMessageParts();
-        fixBooks();
     }
-
-    private void fixBooks() {//TODO Do we even need to fix books anymore? This adds several millis to each ssArgs creation.
-        if (!SignShop.getInstance().getSignShopConfig().getEnableWrittenBookFix())
-            return; //Don't do the rest if we aren't even doing this.
-        if (isItems.getRoot() != null) {
-            itemUtil.fixBooks(isItems.getRoot());
-        }
-        if (containables.getRoot() != null) {
-            itemUtil.fixBooks(itemUtil.getAllItemStacksForContainables(containables.getRoot()));
-        }
-        SignShopPlayer ssPlayerRoot = ssPlayer.getRoot();
-        if (ssPlayerRoot != null && ssPlayerRoot.getPlayer() != null) {
-            if (ssPlayerRoot.getItemInHand() != null) {
-                ItemStack[] stacks = new ItemStack[1];
-                stacks[0] = ssPlayerRoot.getItemInHand();
-                itemUtil.fixBooks(stacks);
-            }
-
-            ItemStack[] inventory = ssPlayerRoot.getInventoryContents();//TODO this already calls fixbooks
-            itemUtil.fixBooks(inventory);
-            ssPlayerRoot.setInventoryContents(inventory);
-        }
-    }
+    
 
     private void setDefaultMessageParts() {//TODO this is a bit slow
         if (ssPlayer.get() != null) {

@@ -3,7 +3,7 @@ package org.wargamer2010.signshop.operations;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.wargamer2010.signshop.SignShop;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.List;

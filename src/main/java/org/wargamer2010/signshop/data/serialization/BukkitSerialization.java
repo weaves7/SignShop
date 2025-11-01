@@ -1,4 +1,4 @@
-package org.wargamer2010.signshop.blocks;
+package org.wargamer2010.signshop.data.serialization;
 
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.Inventory;
