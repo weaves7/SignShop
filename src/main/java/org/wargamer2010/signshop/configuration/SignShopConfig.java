@@ -363,7 +363,7 @@ public class SignShopConfig {
 
             for (String tempOperationString : allSignOperations.get(sKey).split("(,(?![^{]*}))")) { //Matches commas outside curly braces
                 List<String> bits = signshopUtil.getParameters(tempOperationString.trim());
-                String op = bits.get(0);
+                String op = bits.getFirst();
                 Object opinstance = getInstance(packageName + "." + op.trim());
                 if (opinstance == null) // Retry with default package
                     opinstance = getInstance(defaultOPPackage + "." + op.trim());
@@ -830,6 +830,7 @@ public class SignShopConfig {
         return UseBlacklistAsWhitelist;
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean getEnableWrittenBookFix() {
         return EnableWrittenBookFix;
     }

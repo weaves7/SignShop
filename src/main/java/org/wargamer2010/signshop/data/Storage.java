@@ -213,7 +213,7 @@ public class Storage implements Listener {
 
             try {
                 SignShop.log(getInvalidError(
-                        SignShop.getInstance().getSignShopConfig().getError("shop_removed", null), getSetting(sellerSettings, "sign").getFirst(), getSetting(sellerSettings, "shopworld").get(0)), Level.INFO);
+                        SignShop.getInstance().getSignShopConfig().getError("shop_removed", null), getSetting(sellerSettings, "sign").getFirst(), getSetting(sellerSettings, "shopworld").getFirst()), Level.INFO);
             } catch(StorageException lastex) {
                 SignShop.getInstance().debugClassMessage("StorageException Reason: "+caughtex.getReason(), "Storage");
                 SignShop.log(SignShop.getInstance().getSignShopConfig().getError("shop_removed", null), Level.INFO);
@@ -252,7 +252,7 @@ public class Storage implements Listener {
         tempSellers.putAll(configUtil.fetchHashmapInHashmapwithList("deferred_sellers",yml));
         if(tempSellers == null) {
             SignShop.log("Invalid sellers.yml format detected. Old sellers format is no longer supported."
-                    + " Visit http://tiny.cc/signshop for more information.",
+                    + " Visit https://tiny.cc/signshop for more information.",
                     Level.SEVERE);
             return false;
         }
@@ -357,7 +357,7 @@ public class Storage implements Listener {
     }
 
     /**
-     * The Seller now keeps its own Sign Location so call getSign in stead
+     * The Seller now keeps its own Sign Location so call getSign instead
      * @param pSeller
      * @return
      * @deprecated
@@ -423,14 +423,17 @@ public class Storage implements Listener {
         return itemSeperator;
     }
 
-    private void copyFile(File in, File out) throws IOException
-    {
-        try (FileChannel inChannel = new FileInputStream(in).getChannel(); FileChannel outChannel = new FileOutputStream(out).getChannel()) {
+    private void copyFile(File in, File out) throws IOException {
+        try (FileInputStream fis = new FileInputStream(in);
+             FileOutputStream fos = new FileOutputStream(out);
+             FileChannel inChannel = fis.getChannel();
+             FileChannel outChannel = fos.getChannel()) {
             inChannel.transferTo(0, inChannel.size(), outChannel);
         }
     }
 
     private static class StorageException extends Exception {
+        @Serial
         private static final long serialVersionUID = 1L;
         private String world = "";
         private StorageExceptionReason exceptionReason = StorageExceptionReason.UNDEFINED;
