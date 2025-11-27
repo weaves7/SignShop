@@ -11,7 +11,7 @@ import java.util.Properties;
 import java.util.logging.Level;
 
 public class SSDatabase {
-    private static final String downloadURL = "http://cloud.github.com/downloads/wargamer/SignShop/";
+    private static final String downloadURL = "https://cloud.github.com/downloads/wargamer/SignShop/";
     private static Driver driver = null;
     private Connection conn = null;
     private String filename;
@@ -86,7 +86,7 @@ public class SSDatabase {
         try {
             Class.forName("org.sqlite.JDBC");
         } catch(ClassNotFoundException ex) {
-            SignShop.log("Could not find JDBC class in Bukkit JAR, please report this issue with details at http://tiny.cc/signshop", Level.SEVERE);
+            SignShop.log("Could not find JDBC class in Bukkit JAR, please report this issue with details at https://tiny.cc/signshop", Level.SEVERE);
             return;
         }
         driver = new org.sqlite.JDBC();
@@ -119,14 +119,18 @@ public class SSDatabase {
                 SignShop.log("Query: " + Query + " could not be run because the connection to: " + filename + " could not be established", Level.WARNING);
                 return null;
             }
-            PreparedStatement st = conn.prepareStatement(Query, PreparedStatement.RETURN_GENERATED_KEYS);
+
+            // Only request generated keys for INSERT statements
+            String upperQuery = Query.trim().toUpperCase();
+            boolean isInsert = upperQuery.startsWith("INSERT");
+            int autoGenKeys = isInsert ? PreparedStatement.RETURN_GENERATED_KEYS : PreparedStatement.NO_GENERATED_KEYS;
+            PreparedStatement st = conn.prepareStatement(Query, autoGenKeys);
 
             if(params != null && !params.isEmpty()) {
                 for(Map.Entry<Integer, Object> param : params.entrySet()) {
                     if (param.getValue() == null) {
                         SignShop.log("Query: " + Query + " with Key: "+param.getKey()+ " has null value. Setting the value to a String object of 'null'", Level.WARNING);
                         param.setValue("null");
-
                     }
                     if(param.getValue().getClass().equals(int.class) || param.getValue().getClass().equals(Integer.class)) {
                         st.setInt(param.getKey(), ((Integer)param.getValue()));
@@ -139,17 +143,18 @@ public class SSDatabase {
                 return st.executeQuery();
             } else {
                 int result = st.executeUpdate();
-                ResultSet genKeys = st.getGeneratedKeys();
-                if(genKeys == null)
-                    return result;
-                else {
-                    try {
-                        return genKeys.getInt("last_insert_rowid()");
+
+                // Only attempt to retrieve generated keys for INSERT statements
+                if(isInsert) {
+                    try (ResultSet genKeys = st.getGeneratedKeys()) {
+                        if(genKeys != null && genKeys.next()) {
+                            return genKeys.getInt(1);  // Use column index for portability
+                        }
                     } catch(SQLException ex) {
-                        SignShop.log("Query: " + Query + " threw exception: " + ex.getMessage(), Level.WARNING);
-                        return result;
+                        // Failed to get generated key, fall through to return update count
                     }
                 }
+                return result;
             }
         } catch(SQLException ex) {
             SignShop.log("Query: " + Query + " threw exception: " + ex.getMessage(), Level.WARNING);
