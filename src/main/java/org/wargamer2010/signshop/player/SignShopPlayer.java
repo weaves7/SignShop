@@ -372,7 +372,6 @@ public class SignShopPlayer {
     public ItemStack[] getInventoryContents() {
         if (getPlayer() == null)
             return new ItemStack[0];
-//We may need to bring back the fixBooks method here if books in a player's inventory don't work now?
         return getPlayer().getInventory().getContents();
     }
 

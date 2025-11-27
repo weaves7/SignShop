@@ -61,8 +61,12 @@ public class givePlayerItems implements SignShopOperation {
         return true;
     }
 
+    /**
+     * Transfers items from shop to player inventory.
+     * Core operation executed on every shop use.
+     */
     @Override
-    public Boolean runOperation(SignShopArguments ssArgs) {//TODO this seems to take a while
+    public Boolean runOperation(SignShopArguments ssArgs) {
         boolean transactedAll = ssArgs.getPlayer().get().givePlayerItems(ssArgs.getItems().get()).isEmpty();
         if(!transactedAll)
             ssArgs.getPlayer().get().sendMessage(SignShop.getInstance().getSignShopConfig().getError("could_not_complete_operation", null));

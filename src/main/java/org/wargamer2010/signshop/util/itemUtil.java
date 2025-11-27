@@ -102,35 +102,10 @@ public class itemUtil {
         }
         return null;
     }
-@Deprecated
-    public static void fixBooks(ItemStack[] stacks) {//TODO remove later
-        if (stacks == null || !signShopConfig.getEnableWrittenBookFix())
-            return;
 
-        for(ItemStack stack : stacks) {
-            if(stack != null && stack.getType() == Material.WRITTEN_BOOK &&
-                    stack.hasItemMeta() && stack.getItemMeta() instanceof BookMeta) {
-                ItemStack copy = new ItemStack(Material.WRITTEN_BOOK);
-
-                BookFactory.getBookItem(copy).copyFrom(BookFactory.getBookItem(stack));
-
-                ItemMeta copyMeta = copy.getItemMeta();
-                ItemMeta realMeta = stack.getItemMeta();
-
-                copyMeta.setDisplayName(realMeta.getDisplayName());
-                copyMeta.setLore(realMeta.getLore());
-
-                for(Map.Entry<Enchantment, Integer> entry : realMeta.getEnchants().entrySet())
-                    copyMeta.addEnchant(entry.getKey(), entry.getValue(), true);
-
-                stack.setItemMeta(copyMeta);
-            }
-        }
-    }
     /**
      * Fixes book metadata for items deserialized from legacy format.
      * Only needed for backward compatibility with old shops.
-     * This replicates the fixBooks() logic for a single item.
      *
      * @param item The ItemStack to fix (must be WRITTEN_BOOK)
      */
@@ -143,7 +118,6 @@ public class itemUtil {
             return;
         }
 
-        // Same logic as fixBooks() but for single item
         ItemStack copy = new ItemStack(Material.WRITTEN_BOOK);
 
         BookFactory.getBookItem(copy).copyFrom(BookFactory.getBookItem(item));
@@ -434,7 +408,11 @@ public class itemUtil {
         }
     }
 
-    public static void updateStockStatusPerShop(Seller pSeller) {//TODO called frequently
+    /**
+     * Updates sign color based on stock status for a specific shop.
+     * Called after every transaction - optimization target if shop operations lag.
+     */
+    public static void updateStockStatusPerShop(Seller pSeller) {
         if(pSeller != null) {
             Block pSign = pSeller.getSign();
             if(pSign == null || !(pSign.getState() instanceof Sign))
@@ -464,7 +442,12 @@ public class itemUtil {
         }
     }
 
-    public static void updateStockStatus(Block bSign, ChatColor ccColor) {//TODO this is called frequently and makes many ops take a while
+    /**
+     * Updates stock status by checking all chests linked to a shop.
+     * Called after every transaction to update sign color.
+     * If shop operations feel slow, this is a candidate for profiling.
+     */
+    public static void updateStockStatus(Block bSign, ChatColor ccColor) {
         Seller seTemp = Storage.get().getSeller(bSign.getLocation());
         if(seTemp != null) {
             List<Block> iChests = seTemp.getContainables();

@@ -86,7 +86,11 @@ public class SignShopArguments implements IMessagePartContainer {
     }
     
 
-    private void setDefaultMessageParts() {//TODO this is a bit slow
+    /**
+     * Initializes default message placeholders for shop operations.
+     * Called during SignShopArguments construction - executed on every shop interaction.
+     */
+    private void setDefaultMessageParts() {
         if (ssPlayer.get() != null) {
             setMessagePart("!customer", ssPlayer.get().getName());
             setMessagePart("!player", ssPlayer.get().getName());
