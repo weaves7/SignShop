@@ -34,6 +34,13 @@ public class takePlayerItems implements SignShopOperation {
             ssArgs.getPlayer().get().sendMessage(SignShop.getInstance().getSignShopConfig().getError("no_items_defined_for_shop", ssArgs.getMessageParts()));
             return false;
         }
+
+        // Phase 3B: Check for null items within the array (incompatible items that failed to deserialize)
+        if (itemUtil.hasNullItems(ssArgs.getItems().get())) {
+            ssArgs.getPlayer().get().sendMessage(SignShop.getInstance().getSignShopConfig().getError("shop_has_incompatible_items", ssArgs.getMessageParts()));
+            return false;
+        }
+
         SignShopPlayer player = ssArgs.getPlayer().get();
         ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
         if(!player.getVirtualInventory().isStockOK(ssArgs.getItems().get(), true)) {

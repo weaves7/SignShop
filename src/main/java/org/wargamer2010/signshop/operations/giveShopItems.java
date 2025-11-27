@@ -33,6 +33,12 @@ public class giveShopItems implements SignShopOperation {
             return false;
         }
 
+        // Phase 3B: Check for null items within the array (incompatible items that failed to deserialize)
+        if (ssArgs.getItems().get() != null && itemUtil.hasNullItems(ssArgs.getItems().get())) {
+            ssArgs.getPlayer().get().sendMessage(SignShop.getInstance().getSignShopConfig().getError("shop_has_incompatible_items", ssArgs.getMessageParts()));
+            return false;
+        }
+
         Boolean bStockOK = itemUtil.stockOKForContainables(ssArgs.getContainables().get(), ssArgs.getItems().get(), false);
         if(!bStockOK)
             ssArgs.sendFailedRequirementsMessage("overstocked");

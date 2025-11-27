@@ -4,6 +4,8 @@ import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.SignShop;
+import org.wargamer2010.signshop.incompatibility.IncompatibilityChecker;
+import org.wargamer2010.signshop.incompatibility.IncompatibilityType;
 import org.wargamer2010.signshop.util.itemUtil;
 
 import java.io.IOException;
@@ -53,16 +55,53 @@ public class ItemSerializer {
     /**
      * Serializes an ItemStack to a storage-ready string.
      *
-     * <p>Process: ItemStack → Bukkit serialize() → YAML → Base64 → "YAML:..." string</p>
+     * <p><b>Enhanced Process (v5.2.0+):</b></p>
+     * <ol>
+     *   <li>Check for incompatibilities (IncompatibilityChecker)</li>
+     *   <li>If incompatible → Use LEGACY format proactively</li>
+     *   <li>If compatible → ItemStack → Bukkit serialize() → YAML → Base64 → "YAML:..." string</li>
+     * </ol>
+     *
+     * <p><b>Why check before serialization?</b></p>
+     * <p>Some items serialize to YAML successfully but fail to deserialize later,
+     * causing NPE when the shop is used. By checking first, we use LEGACY format
+     * proactively for known problematic items.</p>
      *
      * @param item The ItemStack to serialize (null returns null)
-     * @return Storage-ready string with YAML: prefix, or null
+     * @return Storage-ready string with YAML: or LEGACY: prefix, or null
      */
     public static String serialize(ItemStack item) {
         if (item == null) {
             return null;
         }
 
+        // ==========================================
+        // Phase 3A: Proactive Incompatibility Check
+        // ==========================================
+        // Check for known incompatibilities BEFORE attempting YAML serialization
+        IncompatibilityType incompatibility = IncompatibilityChecker.checkItem(item);
+
+        if (incompatibility != null) {
+            // Item has known incompatibility - use LEGACY format proactively
+            debugLog("Item has incompatibility (" + incompatibility + "), using LEGACY format for " +
+                    item.getType() + " (amount: " + item.getAmount() + ")");
+
+            try {
+                String base64 = BukkitSerialization.itemStackArrayToBase64(new ItemStack[]{item});
+                return LEGACY_PREFIX + base64;
+
+            } catch (Exception e) {
+                SignShop.log(
+                        "Failed to serialize incompatible item to LEGACY format: " + e.getMessage(),
+                        Level.SEVERE
+                );
+                return null;
+            }
+        }
+
+        // ==========================================
+        // Normal YAML Serialization (Compatible Items)
+        // ==========================================
         try {
             // Step 1: Use Bukkit's serialize() to get a Map
             Map<String, Object> itemData = item.serialize();
@@ -76,7 +115,7 @@ public class ItemSerializer {
             // Step 4: Add prefix
             String result = MODERN_PREFIX + base64;
 
-            debugLog("Serialized " + item.getType() + " (amount: " + item.getAmount() + ")");
+            debugLog("Serialized " + item.getType() + " (amount: " + item.getAmount() + ") to YAML format");
 
             return result;
 

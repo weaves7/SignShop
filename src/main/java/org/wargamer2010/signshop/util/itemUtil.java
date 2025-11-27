@@ -522,6 +522,34 @@ public class itemUtil {
         return itemStacks;
     }
 
+    /**
+     * Checks if an ItemStack array contains any null items.
+     *
+     * <p>Null items can occur when:</p>
+     * <ul>
+     *   <li>Item deserialization fails (incompatible items)</li>
+     *   <li>Corrupted shop data</li>
+     *   <li>Items that can't be loaded in current Spigot version</li>
+     * </ul>
+     *
+     * @param items The ItemStack array to check (null-safe)
+     * @return true if array contains at least one null item, false otherwise
+     * @since 5.2.0
+     */
+    public static boolean hasNullItems(ItemStack[] items) {
+        if (items == null || items.length == 0) {
+            return false;
+        }
+
+        for (ItemStack item : items) {
+            if (item == null) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public static String[] convertItemStacksToString(ItemStack[] itemStackArray) {
         List<String> itemStringList = new ArrayList<>();
         if (itemStackArray == null) {

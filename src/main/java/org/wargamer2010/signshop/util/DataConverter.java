@@ -10,23 +10,68 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.util.FileUtil;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.data.*;
-import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.data.serialization.BukkitSerialization;
+import org.wargamer2010.signshop.incompatibility.IncompatibilityChecker;
+import org.wargamer2010.signshop.incompatibility.IncompatibilityType;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 
+/**
+ * Handles data migration for SignShop shops from old formats to modern formats.
+ *
+ * <p><b>Format Detection (Smart Migration):</b></p>
+ * <ol>
+ *   <li><b>YAML:</b> prefix - Modern format (v5.1.0+), skip migration</li>
+ *   <li><b>LEGACY:</b> or rO0AB prefix - DataVersion 3 legacy, upgrade to YAML if compatible</li>
+ *   <li><b>No prefix</b> - Very old format (pre-DataVersion 3), full conversion if compatible</li>
+ * </ol>
+ *
+ * <p><b>Incompatibility Handling:</b></p>
+ * <p>Before migrating items to YAML format, checks for incompatibilities using the
+ * {@link IncompatibilityChecker}. If incompatible items are detected:
+ * <ul>
+ *   <li>Shop stays in LEGACY format (safe, won't cause NPE)</li>
+ *   <li>Detailed warnings logged with issue type and solution</li>
+ *   <li>Shop remains functional in legacy format</li>
+ * </ul>
+ *
+ * <p><b>Automatic Re-Migration (New in v5.2.0):</b></p>
+ * <p>Even after initial migration completes, DataConverter continues to monitor shops
+ * kept in LEGACY format. On each server startup:
+ * <ol>
+ *   <li>Checks if incompatibility detectors are still relevant for current Spigot version</li>
+ *   <li>If ALL detectors report issues are fixed → Re-attempts migration</li>
+ *   <li>Successfully re-migrates shops from LEGACY to YAML automatically</li>
+ * </ol>
+ *
+ * <p><b>Example Scenario:</b></p>
+ * <pre>
+ * Server with Spigot 1.21.10:
+ *   - Shop has custom heads with empty names
+ *   - Incompatibility detected → Shop stays LEGACY
+ *   - DataVersion = current
+ *
+ * Server updates to Spigot 1.21.20 (hypothetical fix):
+ *   - DataVersion already current → Skips full conversion
+ *   - Detectors check: PlayerHeadIncompatibilityDetector.isRelevantForCurrentVersion() = false
+ *   - Re-checks LEGACY shops → No incompatibilities found!
+ *   - Shop automatically migrates to YAML ✓
+ * </pre>
+ *
+ * <p>This ensures shops don't stay in LEGACY format forever when underlying issues are resolved.</p>
+ *
+ * @author SignShop Development Team
+ * @version 5.2.0
+ * @since 5.0.0
+ */
 public class DataConverter {
     static File sellersFile;
     static File sellersFileBackup;
     static File timingFile;
     static File timingFileBackup;
-
 
     public static void init() {
         File dataFolder = SignShop.getInstance().getDataFolder();
@@ -40,9 +85,12 @@ public class DataConverter {
                 FileUtil.copy(sellersFile, sellersFileBackup);
                 convertData(sellers);
                 convertTiming();
-            }
-            else {
+            } else {
                 SignShop.log("Your data is current.", Level.INFO);
+
+                // Even if data is current, re-check shops kept in LEGACY format
+                // This allows automatic migration when Bukkit fixes incompatibility issues
+                recheckLegacyShops(sellers);
             }
         } catch (IOException | InvalidConfigurationException ignored) {
         }
@@ -69,18 +117,218 @@ public class DataConverter {
         } catch (InvalidConfigurationException | IOException e) {
             e.printStackTrace();
         }
+    }
 
+    /**
+     * Re-checks shops that were kept in LEGACY format due to incompatibilities.
+     *
+     * <p><b>Purpose:</b> Allows automatic migration when Bukkit fixes incompatibility issues.
+     * Without this, shops would stay in LEGACY format forever even after the bug is fixed.</p>
+     *
+     * <p><b>When It Runs:</b></p>
+     * <ul>
+     *   <li>Every server startup (after DataVersion check passes)</li>
+     *   <li>Only affects shops with LEGACY: prefixed items/chests</li>
+     *   <li>Only attempts migration if detectors say issues are fixed</li>
+     * </ul>
+     *
+     * <p><b>How It Works:</b></p>
+     * <ol>
+     *   <li>Check if any incompatibility detectors are still relevant</li>
+     *   <li>If NO detectors are relevant → All known issues are fixed!</li>
+     *   <li>Scan for shops with LEGACY format data</li>
+     *   <li>Re-attempt migration to YAML for those shops</li>
+     *   <li>Save if any shops were migrated</li>
+     * </ol>
+     *
+     * <p><b>Performance:</b> Fast - only processes shops with LEGACY format, which should be rare.</p>
+     *
+     * @param sellers Configuration containing shop data
+     */
+    private static void recheckLegacyShops(FileConfiguration sellers) {
+        try {
+            // First, check if any incompatibility detectors are still relevant
+            int relevantDetectors = IncompatibilityChecker.getRelevantDetectorCount();
+
+            if (relevantDetectors > 0) {
+                // Issues still exist in current Spigot version, don't re-check
+                SignShop.log("Incompatibility detectors still active (" + relevantDetectors + " active). " +
+                        "Shops in LEGACY format will not be re-checked.", Level.FINE);
+                return;
+            }
+
+            // All detectors report issues are fixed! Re-check LEGACY shops
+            SignShop.log("All known incompatibility issues are fixed in this server version. " +
+                    "Re-checking shops kept in LEGACY format...", Level.INFO);
+
+            ConfigurationSection section = sellers.getConfigurationSection("sellers");
+            if (section == null) {
+                return;
+            }
+
+            Set<String> shops = section.getKeys(false);
+            int shopsRemigrated = 0;
+            int chestsRemigrated = 0;
+            boolean needsSave = false;
+
+            for (String shop : shops) {
+                StringBuilder itemPath = new StringBuilder().append("sellers.").append(shop).append(".items");
+                StringBuilder miscPath = new StringBuilder().append("sellers.").append(shop).append(".misc");
+
+                // ==========================================
+                // Check for LEGACY format items
+                // ==========================================
+                List<String> items = sellers.getStringList(itemPath.toString());
+
+                if (!items.isEmpty()) {
+                    String firstItem = items.getFirst();
+
+                    // Only process if in LEGACY format
+                    if (firstItem.startsWith("LEGACY:")) {
+                        try {
+                            SignShop.log("Re-checking shop " + shop + " (was kept in LEGACY format)", Level.INFO);
+
+                            // Deserialize from legacy
+                            ItemStack[] legacyItems = new ItemStack[items.size()];
+                            for (int i = 0; i < items.size(); i++) {
+                                String itemData = items.get(i);
+                                if (itemData.startsWith("LEGACY:")) {
+                                    itemData = itemData.substring("LEGACY:".length());
+                                }
+
+                                ItemStack[] decoded = BukkitSerialization.itemStackArrayFromBase64(itemData);
+                                if (decoded != null && decoded.length > 0) {
+                                    legacyItems[i] = decoded[0];
+                                }
+                            }
+
+                            // Check if STILL incompatible (shouldn't be, but be safe)
+                            if (IncompatibilityChecker.hasIncompatibleItems(legacyItems)) {
+                                // Still incompatible? This shouldn't happen since detectors say issues are fixed
+                                SignShop.log("Shop " + shop + " still has incompatible items despite detectors being inactive. " +
+                                        "This may indicate a new incompatibility type. Keeping in LEGACY format.", Level.WARNING);
+                            } else {
+                                // Compatible now! Migrate to YAML
+                                sellers.set(itemPath.toString(), itemUtil.convertItemStacksToString(legacyItems));
+                                shopsRemigrated++;
+                                needsSave = true;
+
+                                SignShop.log("✓ Shop " + shop + " successfully migrated from LEGACY to YAML format", Level.INFO);
+                            }
+
+                        } catch (Exception e) {
+                            SignShop.log("Failed to re-check shop " + shop + ": " + e.getMessage(), Level.WARNING);
+                        }
+                    }
+                }
+
+                // ==========================================
+                // Check for LEGACY format chests
+                // ==========================================
+                List<String> misc = sellers.getStringList(miscPath.toString());
+
+                for (int i = 0; i < misc.size(); i++) {
+                    String miscEntry = misc.get(i);
+
+                    // Check if this is a chest entry with LEGACY format
+                    if ((miscEntry.startsWith("chest1:LEGACY:") || miscEntry.startsWith("chest2:LEGACY:"))) {
+                        try {
+                            String[] parts = miscEntry.split(":", 2);
+                            String key = parts[0];
+                            String value = parts[1];
+
+                            SignShop.log("Re-checking " + key + " for shop " + shop + " (was kept in LEGACY format)", Level.INFO);
+
+                            // Parse LEGACY format chest data
+                            String[] legacyItems = value.split("~");
+                            List<ItemStack> chestItems = new ArrayList<>();
+
+                            for (String legacyItem : legacyItems) {
+                                if (legacyItem.startsWith("LEGACY:")) {
+                                    String base64 = legacyItem.substring("LEGACY:".length());
+                                    ItemStack[] decoded = BukkitSerialization.itemStackArrayFromBase64(base64);
+                                    if (decoded != null && decoded.length > 0 && decoded[0] != null) {
+                                        chestItems.add(decoded[0]);
+                                    }
+                                }
+                            }
+
+                            if (!chestItems.isEmpty()) {
+                                ItemStack[] chestArray = chestItems.toArray(new ItemStack[0]);
+
+                                // Check if STILL incompatible
+                                if (IncompatibilityChecker.hasIncompatibleItems(chestArray)) {
+                                    SignShop.log(key + " for shop " + shop + " still has incompatible items. Keeping in LEGACY format.", Level.WARNING);
+                                } else {
+                                    // Compatible now! Migrate to YAML
+                                    List<String> modernItems = new ArrayList<>();
+                                    for (ItemStack item : chestArray) {
+                                        if (item != null) {
+                                            String[] modernItem = itemUtil.convertItemStacksToString(new ItemStack[]{item});
+                                            if (modernItem.length > 0) {
+                                                modernItems.add(modernItem[0]);
+                                            }
+                                        }
+                                    }
+
+                                    if (!modernItems.isEmpty()) {
+                                        String newEntry = key + ":" + String.join("~", modernItems);
+                                        misc.set(i, newEntry);
+                                        chestsRemigrated++;
+                                        needsSave = true;
+
+                                        SignShop.log("✓ " + key + " for shop " + shop + " successfully migrated from LEGACY to YAML format", Level.INFO);
+                                    }
+                                }
+                            }
+
+                        } catch (Exception e) {
+                            SignShop.log("Failed to re-check chest for shop " + shop + ": " + e.getMessage(), Level.WARNING);
+                        }
+                    }
+                }
+
+                // Save updated misc if chests were migrated
+                if (needsSave && !misc.isEmpty()) {
+                    sellers.set(miscPath.toString(), misc);
+                }
+            }
+
+            // Save if anything was migrated
+            if (needsSave) {
+                sellers.save(sellersFile);
+
+                SignShop.log("=============================================================", Level.INFO);
+                SignShop.log("LEGACY Re-Migration Complete!", Level.INFO);
+                SignShop.log("  - Shops re-migrated to YAML: " + shopsRemigrated, Level.INFO);
+                SignShop.log("  - Chests re-migrated to YAML: " + chestsRemigrated, Level.INFO);
+                SignShop.log("All shops are now using modern YAML format.", Level.INFO);
+                SignShop.log("=============================================================", Level.INFO);
+            } else {
+                SignShop.log("No shops needed re-migration (none were in LEGACY format).", Level.FINE);
+            }
+
+        } catch (Exception e) {
+            SignShop.log("Error during LEGACY shop re-check: " + e.getMessage(), Level.WARNING);
+            e.printStackTrace();
+        }
     }
 
     /**
      * Converts legacy shop data to modern format with smart format detection.
-     * <p>
-     * Handles three scenarios:
-     * 1. YAML: prefix - Already modern, skip
-     * 2. rO0AB or LEGACY: prefix - DataVersion 3 legacy, upgrade to YAML
-     * 3. No prefix - Very old format (pre-DataVersion 3), full conversion
-     * <p>
-     * Also migrates chest1/chest2 data from legacy Base64 to YAML format.
+     *
+     * <p><b>Handles three scenarios:</b></p>
+     * <ol>
+     *   <li>YAML: prefix - Already modern, skip</li>
+     *   <li>rO0AB or LEGACY: prefix - DataVersion 3 legacy, upgrade to YAML if compatible</li>
+     *   <li>No prefix - Very old format (pre-DataVersion 3), full conversion if compatible</li>
+     * </ol>
+     *
+     * <p><b>Incompatibility Checking:</b></p>
+     * <p>Before upgrading items to YAML, checks for incompatibilities. If found,
+     * shop stays in LEGACY format with detailed warnings logged.</p>
+     *
+     * <p>Also migrates chest1/chest2 data from legacy Base64 to YAML format.</p>
      */
     private static void convertData(FileConfiguration sellers) {
         try {
@@ -93,6 +341,7 @@ public class DataConverter {
                 Set<String> shops = section.getKeys(false);
                 int itemsConverted = 0;
                 int itemsSkipped = 0;
+                int itemsKeptLegacy = 0;
                 int chestsConverted = 0;
 
                 for (String shop : shops) {
@@ -132,9 +381,19 @@ public class DataConverter {
                                     }
                                 }
 
-                                // Re-serialize using modern YAML format
-                                sellers.set(itemPath.toString(), itemUtil.convertItemStacksToString(legacyItems));
-                                itemsConverted++;
+                                // *** INCOMPATIBILITY CHECK ***
+                                // Check for incompatible items BEFORE migrating to YAML
+                                if (IncompatibilityChecker.hasIncompatibleItems(legacyItems)) {
+                                    // Found incompatible items - keep in legacy format
+                                    List<IncompatibilityType> issues = IncompatibilityChecker.checkAll(legacyItems);
+                                    logIncompatibilityWarning(shop, issues);
+                                    itemsKeptLegacy++;
+                                    // Don't modify items - keep original legacy format
+                                } else {
+                                    // Safe to migrate to YAML - no incompatibilities found
+                                    sellers.set(itemPath.toString(), itemUtil.convertItemStacksToString(legacyItems));
+                                    itemsConverted++;
+                                }
 
                             } catch (Exception e) {
                                 SignShop.log("Failed to upgrade DataVersion 3 items for shop " + shop + ": " + e.getMessage(), Level.WARNING);
@@ -144,35 +403,28 @@ public class DataConverter {
                             // SCENARIO 3: Very old format (pre-DataVersion 3) - needs full conversion
                         } else {
                             try {
-                                SignShop.log("Converting very old format items for shop: " + shop +
-                                                ". First item: " +
-                                                (firstItem.length() > 50 ? firstItem.substring(0, 50) + "..." : firstItem),
-                                        Level.INFO);
+                                SignShop.log("Converting very old format items for shop: " + shop, Level.INFO);
 
-                                ItemStack[] itemStacks = convertOldStringsToItemStacks(items);
+                                // Use the old conversion method
+                                ItemStack[] convertedItems = convertOldStringsToItemStacks(items);
 
-                                // Check if conversion actually produced items
-                                boolean hasValidItems = false;
-                                for (ItemStack stack : itemStacks) {
-                                    if (stack != null) {
-                                        hasValidItems = true;
-                                        break;
-                                    }
-                                }
-
-                                if (hasValidItems) {
-                                    sellers.set(itemPath.toString(), itemUtil.convertItemStacksToString(itemStacks));
-                                    itemsConverted++;
+                                // *** INCOMPATIBILITY CHECK ***
+                                // Check for incompatible items BEFORE migrating to YAML
+                                if (IncompatibilityChecker.hasIncompatibleItems(convertedItems)) {
+                                    // Found incompatible items - keep in original format
+                                    List<IncompatibilityType> issues = IncompatibilityChecker.checkAll(convertedItems);
+                                    logIncompatibilityWarning(shop, issues);
+                                    itemsKeptLegacy++;
+                                    // Don't modify items - keep original format
                                 } else {
-                                    SignShop.log("No valid items found after conversion for shop " + shop + ", keeping original",
-                                            Level.WARNING);
+                                    // Safe to migrate to YAML - no incompatibilities found
+                                    sellers.set(itemPath.toString(), itemUtil.convertItemStacksToString(convertedItems));
+                                    itemsConverted++;
                                 }
 
                             } catch (Exception e) {
-                                SignShop.log("Failed to convert unknown format items for shop " + shop + ": " +
-                                        e.getMessage(), Level.WARNING);
-                                SignShop.log("Keeping original data for safety", Level.WARNING);
-                                // Keep original on failure - better than nulling everything
+                                SignShop.log("Failed to convert very old format items for shop " + shop + ": " + e.getMessage(), Level.WARNING);
+                                SignShop.log("Keeping original format for safety", Level.WARNING);
                             }
                         }
                     }
@@ -198,8 +450,8 @@ public class DataConverter {
                             newMisc.add(key + ":" + data);
                         }
 
-                        // Migrate chest serialization (chest1, chest2)
-                        List<String> migratedMisc = migrateChestSerialization(newMisc);
+                        // Migrate chest serialization (chest1, chest2) with incompatibility detection
+                        List<String> migratedMisc = migrateChestSerialization(newMisc, shop);
                         if (migratedMisc.size() > newMisc.size() || !migratedMisc.equals(newMisc)) {
                             chestsConverted++;
                         }
@@ -211,6 +463,7 @@ public class DataConverter {
                 SignShop.log("Data conversion of " + shops.size() + " shops has finished.", Level.INFO);
                 SignShop.log("  - Items upgraded to YAML: " + itemsConverted, Level.INFO);
                 SignShop.log("  - Items already modern (skipped): " + itemsSkipped, Level.INFO);
+                SignShop.log("  - Items kept in LEGACY (incompatibilities): " + itemsKeptLegacy, Level.INFO);
                 SignShop.log("  - Shops with chests migrated: " + chestsConverted, Level.INFO);
             }
 
@@ -224,21 +477,58 @@ public class DataConverter {
     }
 
     /**
+     * Logs detailed warning about incompatible items found in a shop.
+     *
+     * <p>Provides user-friendly information about:
+     * <ul>
+     *   <li>What incompatibility was found</li>
+     *   <li>Why it's incompatible</li>
+     *   <li>How to fix it</li>
+     * </ul>
+     *
+     * @param shopId Shop identifier for logging
+     * @param issues List of incompatibility types found
+     */
+    private static void logIncompatibilityWarning(String shopId, List<IncompatibilityType> issues) {
+        SignShop.log("=============================================================", Level.WARNING);
+        SignShop.log("Shop " + shopId + " kept in LEGACY format (incompatible items detected)", Level.WARNING);
+
+        // Count occurrences of each issue type
+        Map<IncompatibilityType, Integer> issueCounts = new HashMap<>();
+        for (IncompatibilityType issue : issues) {
+            issueCounts.put(issue, issueCounts.getOrDefault(issue, 0) + 1);
+        }
+
+        // Log each unique issue type with count
+        for (Map.Entry<IncompatibilityType, Integer> entry : issueCounts.entrySet()) {
+            IncompatibilityType issue = entry.getKey();
+            int count = entry.getValue();
+
+            SignShop.log("  Issue: " + issue.getDescription() + " (x" + count + ")", Level.WARNING);
+            SignShop.log("  Affected Versions: " + issue.getAffectedVersions(), Level.WARNING);
+            SignShop.log("  Solution: " + issue.getSolution(), Level.WARNING);
+        }
+
+        SignShop.log("The shop will continue to work in legacy format.", Level.WARNING);
+        SignShop.log("=============================================================", Level.WARNING);
+    }
+
+    /**
      * Migrates legacy chest data (chest1:, chest2:) from BukkitObjectOutputStream
      * to modern YAML format. Part of v5.1.0 modernization.
-     * <p>
-     * Handles multi-line Base64 where a single item's Base64 data wraps across lines,
-     * and multiple items are separated by lines starting with ~.
-     * <p>
-     * Example input:
-     *   "chest1:rO0AB...\n      continuesBase64...\n      moreBase64...\n~rO0AB...(item2)"
-     * <p>
-     * The ~ prefix indicates the START of a new item, not just a line continuation.
+     *
+     * <p>Handles multi-line Base64 where a single item's Base64 data wraps across lines,
+     * and multiple items are separated by lines starting with ~.</p>
+     *
+     * <p><b>Incompatibility Handling:</b></p>
+     * <p>Before migrating chest contents to YAML, checks for incompatibilities.
+     * If found, chest stays in LEGACY format.</p>
      *
      * @param miscList List of misc data strings
+     * @param shopName Shop identifier for logging
      * @return Updated list with modern serialization
      */
-    private static List<String> migrateChestSerialization(List<String> miscList) {
+    private static List<String> migrateChestSerialization(List<String> miscList, String shopName) {
         if (miscList == null || miscList.isEmpty()) {
             return miscList;
         }
@@ -277,13 +567,17 @@ public class DataConverter {
 
             try {
                 List<String> modernItems = new ArrayList<>();
+                List<ItemStack> chestItems = new ArrayList<>();
 
                 // Split by lines that START with ~ (item boundaries)
-                // Use regex to split on \n~ but keep the ~ with the following content
                 String[] itemChunks = miscEntry.split("\n(?=~)");
 
+                // ==========================================
+                // FIRST PASS: Deserialize all items
+                // ==========================================
                 for (int i = 0; i < itemChunks.length; i++) {
                     String chunk = itemChunks[i];
+                    String base64Data;
 
                     if (i == 0) {
                         // First chunk: "chest1:rO0AB...\n  continues...\n  more..."
@@ -293,76 +587,99 @@ public class DataConverter {
                             updated.add(miscEntry);
                             break;
                         }
+                        base64Data = firstParts[1].replaceAll("\\s+", "");
+                    } else {
+                        // Continuation chunks: "~rO0AB...\n  continues...\n  more..."
+                        if (!chunk.startsWith("~")) continue;
+                        base64Data = chunk.substring(1).replaceAll("\\s+", "");
+                    }
 
-                        // Remove all newlines and whitespace from Base64 data
-                        String base64Data = firstParts[1].replaceAll("\\s+", "");
+                    // Skip if already modern
+                    if (base64Data.startsWith("YAML:")) {
+                        base64Data = base64Data.substring("YAML:".length());
+                    } else if (base64Data.startsWith("LEGACY:")) {
+                        base64Data = base64Data.substring("LEGACY:".length());
+                    }
 
-                        // Skip if already modern
-                        if (base64Data.startsWith("YAML:")) {
-                            modernItems.add(base64Data);
-                            continue;
-                        }
-
-                        // Remove LEGACY: prefix if present
-                        if (base64Data.startsWith("LEGACY:")) {
-                            base64Data = base64Data.substring("LEGACY:".length());
-                        }
-
-                        // Deserialize from legacy format
+                    // Deserialize from legacy format
+                    try {
                         ItemStack[] items = BukkitSerialization.itemStackArrayFromBase64(base64Data);
-
-                        // Re-serialize in modern format
                         if (items != null && items.length > 0 && items[0] != null) {
-                            String[] modernItem = itemUtil.convertItemStacksToString(new ItemStack[]{items[0]});
+                            chestItems.add(items[0]);
+                        }
+                    } catch (Exception e) {
+                        SignShop.log("Failed to deserialize chest item: " + e.getMessage(), Level.WARNING);
+                    }
+                }
+
+                if (chestItems.isEmpty()) {
+                    // No items deserialized, keep original
+                    updated.add(miscEntry);
+                    continue;
+                }
+
+                // ==========================================
+                // INCOMPATIBILITY CHECK
+                // ==========================================
+                ItemStack[] chestArray = chestItems.toArray(new ItemStack[0]);
+
+                if (IncompatibilityChecker.hasIncompatibleItems(chestArray)) {
+                    // Found incompatible items - keep ENTIRE chest in LEGACY format
+                    List<IncompatibilityType> issues = IncompatibilityChecker.checkAll(chestArray);
+
+                    SignShop.log("=============================================================", Level.WARNING);
+                    SignShop.log("Shop " + shopName + " " + key + " kept in LEGACY format (incompatible items)", Level.WARNING);
+
+                    for (IncompatibilityType issue : new HashSet<>(issues)) {
+                        SignShop.log("  Issue: " + issue.getDescription(), Level.WARNING);
+                        SignShop.log("  Solution: " + issue.getSolution(), Level.WARNING);
+                    }
+
+                    SignShop.log("=============================================================", Level.WARNING);
+
+                    // Re-serialize all items as LEGACY
+                    List<String> legacyItems = new ArrayList<>();
+                    for (ItemStack item : chestArray) {
+                        if (item != null) {
+                            try {
+                                String legacyBase64 = BukkitSerialization.itemStackArrayToBase64(new ItemStack[]{item});
+                                legacyItems.add("LEGACY:" + legacyBase64);
+                            } catch (Exception e) {
+                                SignShop.log("Failed to re-serialize item to legacy format: " + e.getMessage(), Level.WARNING);
+                            }
+                        }
+                    }
+
+                    if (!legacyItems.isEmpty()) {
+                        String flatFormat = key + ":" + String.join("~", legacyItems);
+                        updated.add(flatFormat);
+                    } else {
+                        updated.add(miscEntry);
+                    }
+
+                } else {
+                    // Safe to migrate ENTIRE chest to YAML - no incompatibilities found
+                    for (ItemStack item : chestArray) {
+                        if (item != null) {
+                            String[] modernItem = itemUtil.convertItemStacksToString(new ItemStack[]{item});
                             if (modernItem.length > 0) {
                                 modernItems.add(modernItem[0]);
                             }
                         }
-
-                    } else {
-                        // Continuation chunks: "~rO0AB...\n  continues...\n  more..."
-                        if (chunk.startsWith("~")) {
-                            // Remove ~ prefix and all newlines/whitespace from Base64 data
-                            String base64Data = chunk.substring(1).replaceAll("\\s+", "");
-
-                            // Skip if already modern
-                            if (base64Data.startsWith("YAML:")) {
-                                modernItems.add(base64Data);
-                                continue;
-                            }
-
-                            // Remove LEGACY: prefix if present
-                            if (base64Data.startsWith("LEGACY:")) {
-                                base64Data = base64Data.substring("LEGACY:".length());
-                            }
-
-                            // Deserialize from legacy format
-                            ItemStack[] items = BukkitSerialization.itemStackArrayFromBase64(base64Data);
-
-                            // Re-serialize in modern format
-                            if (items != null && items.length > 0 && items[0] != null) {
-                                String[] modernItem = itemUtil.convertItemStacksToString(new ItemStack[]{items[0]});
-                                if (modernItem.length > 0) {
-                                    modernItems.add(modernItem[0]);
-                                }
-                            }
-                        }
                     }
-                }
 
-                // Join with ~ separator (NO newlines) - this matches what implode() creates
-                if (!modernItems.isEmpty()) {
-                    String flatFormat = key + ":" + String.join("~", modernItems);
-                    updated.add(flatFormat);
-                    migratedCount++;
-                } else {
-                    // If migration produced nothing, keep original
-                    updated.add(miscEntry);
+                    if (!modernItems.isEmpty()) {
+                        String flatFormat = key + ":" + String.join("~", modernItems);
+                        updated.add(flatFormat);
+                        migratedCount++;
+                    } else {
+                        updated.add(miscEntry);
+                    }
                 }
 
             } catch (Exception e) {
                 // If migration fails, keep original (better than losing data)
-                SignShop.log("Failed to migrate " + key + " data, keeping original: " +
+                SignShop.log("Failed to migrate " + key + " data for shop " + shopName + ", keeping original: " +
                         e.getMessage(), Level.WARNING);
                 e.printStackTrace();
                 updated.add(miscEntry);
@@ -454,7 +771,6 @@ public class DataConverter {
 
             itemStacks = temp;
         }
-
 
         return itemStacks;
     }

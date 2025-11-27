@@ -108,6 +108,13 @@ public class Chest implements SignShopOperation {
         ItemStack[] isItemss;
 
         isItemss = itemUtil.convertStringtoItemStacks(Arrays.asList(sItemss));
+
+        // Phase 3B: Check for null items (incompatible items that failed to deserialize)
+        if (itemUtil.hasNullItems(isItemss)) {
+            ssArgs.getPlayer().get().sendMessage(SignShop.getInstance().getSignShopConfig().getError("shop_has_incompatible_items", ssArgs.getMessageParts()));
+            return false;
+        }
+
         ssArgs.getItems().set(isItemss);
 
         Block bHolder = checkChestAmount(ssArgs, iChestnumber);
