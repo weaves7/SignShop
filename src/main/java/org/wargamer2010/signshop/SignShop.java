@@ -338,9 +338,11 @@ public class SignShop extends JavaPlugin {
         pm.registerEvents(new MoneyModifierListener(), this);
         pm.registerEvents(new SignSidesValidator(),this);
 
-       /* DynmapManager dmm = new DynmapManager();TODO
+        // Dynmap integration (modern API listener pattern for Dynmap 3.0+)
+        DynmapManager dmm = new DynmapManager();
         if (getSignShopConfig().getEnableDynmapSupport())
-            pm.registerEvents(dmm, this);*/
+            pm.registerEvents(dmm, this);
+
         if (getSignShopConfig().getEnableShopPlotSupport()) {
             if (this.getServer().getPluginManager().isPluginEnabled("WorldGuard")) {
                 pm.registerEvents(new WorldGuardChecker(), this);

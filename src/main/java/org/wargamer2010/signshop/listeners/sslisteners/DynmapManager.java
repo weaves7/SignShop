@@ -1,12 +1,11 @@
+package org.wargamer2010.signshop.listeners.sslisteners;
 
-/*package org.wargamer2010.signshop.listeners.sslisteners;TODO
-
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.plugin.Plugin;
+import org.dynmap.DynmapCommonAPI;
+import org.dynmap.DynmapCommonAPIListener;
 import org.dynmap.markers.Marker;
 import org.dynmap.markers.MarkerAPI;
 import org.dynmap.markers.MarkerIcon;
@@ -23,8 +22,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.logging.Level;
 
-public class DynmapManager implements Listener {
-    private DynmapAPI dynmapAPI = null;
+/**
+ * Manages Dynmap marker integration for SignShop.
+ *
+ * <p>Creates map markers for shops so they appear on the Dynmap web interface.
+ * Uses the modern DynmapCommonAPIListener pattern for Dynmap 3.0+ compatibility.</p>
+ *
+ * @since 5.1.0
+ */
+public class DynmapManager extends DynmapCommonAPIListener implements Listener {
+    private DynmapCommonAPI dynmapAPI = null;
     private MarkerAPI markerAPI = null;
     private MarkerSet ms = null;
     private MarkerIcon mi = null;
@@ -36,65 +43,98 @@ public class DynmapManager implements Listener {
     private final static String MarkerLabel = "SignShop";
 
     public DynmapManager() {
+        // Register with Dynmap using the modern API listener pattern (Dynmap 3.0+)
+        DynmapCommonAPIListener.register(this);
+    }
+
+    /**
+     * Called by Dynmap when the API becomes available.
+     * This is the modern way to get DynmapAPI (Dynmap 3.0+).
+     */
+    @Override
+    public void apiEnabled(DynmapCommonAPI api) {
+        dynmapAPI = api;
         init();
+    }
+
+    /**
+     * Called by Dynmap when the API is disabled (server shutdown, plugin reload, etc).
+     */
+    @Override
+    public void apiDisabled(DynmapCommonAPI api) {
+        dynmapAPI = null;
+        markerAPI = null;
+        ms = null;
+        mi = null;
     }
 
     private boolean safelyCheckInit() {
         try {
-            return dynmapAPI != null && dynmapAPI.markerAPIInitialized();
+            return dynmapAPI != null && markerAPI != null;
         } catch(NullPointerException ex) {
-            // markerAPIInitialized call doesn't null check
             return false;
         }
     }
 
     private void init() {
-        Plugin plugin = Bukkit.getServer().getPluginManager().getPlugin("dynmap");
-        if(plugin == null)
+        if (dynmapAPI == null) {
+            SignShop.log("DynmapAPI not available during initialization.", Level.WARNING);
             return;
+        }
 
-        dynmapAPI = (DynmapAPI)plugin;
         if (!SignShop.getInstance().getSignShopConfig().getEnableDynmapSupport()) {
-            if (safelyCheckInit()) {
-                MarkerSet temp = dynmapAPI.getMarkerAPI().getMarkerSet(MarkerSetName);
-                if (temp != null)
+            // Dynmap support disabled - clean up any existing marker set
+            markerAPI = dynmapAPI.getMarkerAPI();
+            if (markerAPI != null) {
+                MarkerSet temp = markerAPI.getMarkerSet(MarkerSetName);
+                if (temp != null) {
                     temp.deleteMarkerSet();
+                }
             }
             return;
         }
 
-        if(!safelyCheckInit()) {
-            SignShop.log("MarkerAPI for Dynmap has not been initialised, please check dynmap's configuration.", Level.WARNING);
+        markerAPI = dynmapAPI.getMarkerAPI();
+        if (markerAPI == null) {
+            SignShop.log("MarkerAPI for Dynmap is not available, please check dynmap's configuration.", Level.WARNING);
             return;
         }
 
-        markerAPI = dynmapAPI.getMarkerAPI();
+        // Get or create the SignShop marker set
         ms = markerAPI.getMarkerSet(MarkerSetName);
-        if(ms == null)
+        if (ms == null) {
             ms = markerAPI.createMarkerSet(MarkerSetName, MarkerSetLabel, null, false);
-        if(ms == null) {
+        }
+        if (ms == null) {
             SignShop.log("Could not create MarkerSet for Dynmap.", Level.WARNING);
             return;
         }
 
+        // Load or create the custom marker icon
         try {
-            if(markerAPI.getMarkerIcon(MarkerName) == null) {
+            if (markerAPI.getMarkerIcon(MarkerName) == null) {
                 InputStream in = getClass().getResourceAsStream("/" + Filename);
-                if(in.available() > 0) {
+                if (in != null && in.available() > 0) {
                     mi = markerAPI.createMarkerIcon(MarkerName, MarkerLabel, in);
                 }
             } else {
                 mi = markerAPI.getMarkerIcon(MarkerName);
             }
-        } catch (IOException ignored) {
+        } catch (IOException ex) {
+            SignShop.log("Failed to load custom Dynmap icon: " + ex.getMessage(), Level.WARNING);
         }
 
-        if(mi == null)
+        // Fallback to default sign icon if custom icon failed
+        if (mi == null) {
             mi = markerAPI.getMarkerIcon("sign");
+        }
 
-        for(Seller seller : Storage.get().getSellers()) {
+        // Create markers for all existing shops
+        for (Seller seller : Storage.get().getSellers()) {
             ManageMarkerForSeller(seller, false);
         }
+
+        SignShop.log("Dynmap integration enabled successfully.", Level.INFO);
     }
 
     private void ManageMarkerForSeller(Seller seller, boolean remove) {
@@ -102,20 +142,22 @@ public class DynmapManager implements Listener {
     }
 
     private void ManageMarkerForSeller(Location loc, String owner, String world, boolean remove) {
-        if(ms == null)
+        if (!safelyCheckInit() || ms == null) {
             return;
+        }
 
         String id = ("SignShop_" + signshopUtil.convertLocationToString(loc).replace(".", ""));
         String label = (owner + "'s SignShop");
 
         Marker m = ms.findMarker(id);
-        if(remove) {
-            if(m != null)
+        if (remove) {
+            if (m != null) {
                 m.deleteMarker();
+            }
             return;
         }
 
-        if(m == null) {
+        if (m == null) {
             ms.createMarker(id, label, world, loc.getX(), loc.getY(), loc.getZ(), mi, false);
         } else {
             m.setLocation(world, loc.getX(), loc.getY(), loc.getZ());
@@ -126,17 +168,19 @@ public class DynmapManager implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onSSDestroyCleanup(SSDestroyedEvent event) {
-        if(event.isCancelled() || event.getReason() != SSDestroyedEventType.sign)
+        if (event.isCancelled() || event.getReason() != SSDestroyedEventType.sign) {
             return;
+        }
 
         ManageMarkerForSeller(event.getShop(), true);
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onSSBuildEvent(SSCreatedEvent event) {
-        if(event.isCancelled())
+        if (event.isCancelled()) {
             return;
+        }
 
         ManageMarkerForSeller(event.getSign().getLocation(), event.getPlayer().getName(), event.getPlayer().getWorld().getName(), false);
     }
-}*/
+}
