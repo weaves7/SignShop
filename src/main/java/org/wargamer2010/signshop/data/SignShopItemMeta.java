@@ -98,8 +98,13 @@ public class SignShopItemMeta {
         if(stack.getItemMeta() != null) {
             String custom = (stack.getItemMeta().hasDisplayName()
                     ? (txtcolor + "\"" + customcolor + stack.getItemMeta().getDisplayName() + txtcolor + "\"") : "");
-            if(!custom.isEmpty())
-                displayname = (custom + " (" + normal + ")" + txtcolor);
+            if(!custom.isEmpty()) {
+                if (SignShop.getInstance().getSignShopConfig().getShowMaterialInCustomNames()) {
+                    displayname = (custom + " (" + normal + ")" + txtcolor);
+                } else {
+                    displayname = custom + txtcolor;
+                }
+            }
         }
 
         if(displayname.isEmpty())

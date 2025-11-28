@@ -92,6 +92,11 @@ EnablePermits: false
 # Enables the Written Book fix when set to true (Default = true)
 EnableWrittenBookFix: true
 
+# Show material name in parentheses when items have custom display names (Default = true)
+# When true: "Tri Cheese Pizza" (Paper)
+# When false: "Tri Cheese Pizza"
+ShowMaterialInCustomNames: true
+
 # Used to allow groups of users to use shops for different amounts of money
 # A multiplier of "1.0" means the amount is the same as it is on the sign
 # For more help with this, please read the Quick Reference
