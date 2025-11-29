@@ -334,7 +334,9 @@ public class itemUtil {
             // Build the visible text (same as itemStackToString logic)
             String itemName = SignShopItemMeta.getName(entry.getKey());
             String count = entry.getValue().toString() + " ";
-            String displayText = count + (itemName.isEmpty() ? formatMaterialName(entry.getKey()) : itemName);
+            // Prepend default color code so it applies unless overridden by item name colors
+            String colorCode = "§" + signShopConfig.getTextColor().getChar();
+            String displayText = colorCode + count + (itemName.isEmpty() ? formatMaterialName(entry.getKey()) : itemName);
 
             // Add book info if applicable
             if (isWriteableBook(entry.getKey())) {
@@ -347,20 +349,24 @@ public class itemUtil {
 
             // Add lore preview if applicable
             if (entry.getKey().hasItemMeta() && entry.getKey().getItemMeta().hasLore()) {
-                StringBuilder lorePreview = new StringBuilder(" <");
+                StringBuilder lorePreview = new StringBuilder(colorCode + " <");
                 boolean firstLore = true;
                 for (String loreLine : entry.getKey().getItemMeta().getLore()) {
                     if (firstLore) firstLore = false;
-                    else lorePreview.append(", ");
-                    lorePreview.append(ChatColor.stripColor(loreLine));
+                    else lorePreview.append(colorCode).append(", ").append(ChatColor.RESET);
+                    lorePreview.append(loreLine);  // Keep original lore colors!
                 }
-                lorePreview.append(">");
+                lorePreview.append(colorCode).append("> ").append(ChatColor.RESET);
                 displayText += lorePreview.toString();
             }
 
-            // Create text component with hover event
-            TextComponent itemComponent = new TextComponent(displayText);
-            itemComponent.setColor(net.md_5.bungee.api.ChatColor.getByChar(signShopConfig.getTextColor().getChar()));
+            // Add trailing white color to match itemStackToString behavior
+            displayText += ChatColor.WHITE;
+
+            // Parse legacy color codes into components
+            // This preserves color codes from custom item names while applying default color
+            BaseComponent[] displayComponents = TextComponent.fromLegacyText(displayText);
+            TextComponent itemComponent = new TextComponent(displayComponents);
 
             // Add hover event showing full item tooltip
             try {

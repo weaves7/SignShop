@@ -745,8 +745,9 @@ public class SignShopConfig {
         String workingMessage = ChatColor.translateAlternateColorCodes(getColorCode(), pMessage);
 
         if (messageParts == null || messageParts.isEmpty()) {
-            // No placeholders to replace, return as plain component
-            return new TextComponent(workingMessage.replace("\\", ""));
+            // No placeholders to replace, convert legacy colors and return
+            String cleaned = workingMessage.replace("\\", "");
+            return new TextComponent(TextComponent.fromLegacyText(cleaned));
         }
 
         // Use TreeMap with StringLengthComparator to process longest placeholders first
@@ -769,7 +770,10 @@ public class SignShopConfig {
                 // Add text before placeholder (if any)
                 if (index > 0) {
                     String beforeText = workingMessage.substring(0, index);
-                    builder.append(new TextComponent(beforeText), ComponentBuilder.FormatRetention.NONE);
+                    // Use fromLegacyText to preserve color codes
+                    for (BaseComponent component : TextComponent.fromLegacyText(beforeText)) {
+                        builder.append(component, ComponentBuilder.FormatRetention.NONE);
+                    }
                     hasContent = true;
                 }
 
@@ -780,8 +784,10 @@ public class SignShopConfig {
                     builder.append(itemComponent, ComponentBuilder.FormatRetention.NONE);
                     hasContent = true;
                 } else if (value instanceof String) {
-                    // Add plain text
-                    builder.append((String) value, ComponentBuilder.FormatRetention.NONE);
+                    // Add plain text, preserving color codes
+                    for (BaseComponent component : TextComponent.fromLegacyText((String) value)) {
+                        builder.append(component, ComponentBuilder.FormatRetention.NONE);
+                    }
                     hasContent = true;
                 }
 
@@ -792,7 +798,10 @@ public class SignShopConfig {
 
         // Add any remaining text after all placeholders
         if (!workingMessage.isEmpty()) {
-            builder.append(new TextComponent(workingMessage), ComponentBuilder.FormatRetention.NONE);
+            // Use fromLegacyText to preserve color codes
+            for (BaseComponent component : TextComponent.fromLegacyText(workingMessage)) {
+                builder.append(component, ComponentBuilder.FormatRetention.NONE);
+            }
             hasContent = true;
         }
 
