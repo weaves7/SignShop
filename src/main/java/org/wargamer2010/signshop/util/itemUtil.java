@@ -1,10 +1,14 @@
 package org.wargamer2010.signshop.util;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.hover.content.Content;
 import net.md_5.bungee.api.chat.hover.content.Text;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
@@ -232,7 +236,7 @@ public class itemUtil {
         safelyAddEnchantments(isBackup, item.getEnchantments());
         return tags.copyTags(item, isBackup);
     }
-//TODO https://www.spigotmc.org/threads/1-20-show-items-in-chat-without-nms.616388/#post-4631549
+
    @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     public static String itemStackToString(ItemStack[] isStacks) {
         if(isStacks == null || isStacks.length == 0)
@@ -364,40 +368,73 @@ public class itemUtil {
                 ItemStack hoverItem = entry.getKey().clone();
                 hoverItem.setAmount(entry.getValue());
 
-                // Serialize the item's data for the hover tooltip
-                // NOTE: Due to a known BungeeCord limitation (issue #3688), hover tooltips
-                // only show the item type on Spigot 1.20.5+/1.21, not enchantments/lore/etc.
-                // This will be fixed when BungeeCord updates ItemTag.ofNbt() to support
-                // the new Data Components format introduced in Minecraft 1.20.5.
-                String itemData = null;
-                if (hoverItem.hasItemMeta()) {
-                    ItemMeta meta = hoverItem.getItemMeta();
-                    if (meta != null) {
-                        try {
-                            String metaString = meta.getAsString();
-                            if (metaString != null && !metaString.isEmpty()) {
-                                itemData = metaString;
-                            }
-                        } catch (Exception e) {
-                            // Serialization failed, use empty data
+                HoverEvent hoverEvent = null;
+
+                // Try Paper's serializeItemAsJson() first for full tooltip support (1.20.5+)
+                // Uses reflection since this method only exists on Paper, not pure Spigot
+                try {
+                    // Call Bukkit.getUnsafe().serializeItemAsJson(item) via reflection
+                    java.lang.reflect.Method serializeMethod = Bukkit.getUnsafe().getClass()
+                        .getMethod("serializeItemAsJson", ItemStack.class);
+                    JsonObject itemJson = (JsonObject) serializeMethod.invoke(Bukkit.getUnsafe(), hoverItem);
+
+                    if (itemJson != null) {
+                        String itemId = itemJson.get("id").getAsString();
+                        int itemCount = itemJson.get("count").getAsInt();
+                        JsonElement components = itemJson.get("components");
+
+                        if (components != null) {
+                            // Paper server with Data Components - full tooltip support!
+                            hoverEvent = new HoverEvent(
+                                HoverEvent.Action.SHOW_ITEM,
+                                new PaperItemHoverContent(itemId, itemCount, components)
+                            );
                         }
                     }
+                } catch (NoSuchMethodException e) {
+                    // Not a Paper server, fall through to Spigot method
+                } catch (Exception e) {
+                    // Paper method failed, fall through to Spigot method
                 }
 
-                // Create the hover event with the item data
-                // Use empty tag "{}" if no metadata, otherwise use serialized data (component or NBT format)
-                itemComponent.setHoverEvent(new HoverEvent(
-                    HoverEvent.Action.SHOW_ITEM,
-                    new net.md_5.bungee.api.chat.hover.content.Item(
-                        hoverItem.getType().getKey().toString(),
-                        hoverItem.getAmount(),
-                        net.md_5.bungee.api.chat.ItemTag.ofNbt(itemData != null ? itemData : "{}")
-                    )
-                ));
+                // Fallback to Spigot method if Paper method didn't work
+                if (hoverEvent == null) {
+                    // Serialize the item's data for the hover tooltip
+                    // NOTE: Due to a known BungeeCord limitation (issue #3688), hover tooltips
+                    // only show the item type on Spigot 1.20.5+/1.21, not enchantments/lore/etc.
+                    // This will be fixed when BungeeCord updates ItemTag.ofNbt() to support
+                    // the new Data Components format introduced in Minecraft 1.20.5.
+                    String itemData = null;
+                    if (hoverItem.hasItemMeta()) {
+                        ItemMeta meta = hoverItem.getItemMeta();
+                        if (meta != null) {
+                            try {
+                                String metaString = meta.getAsString();
+                                if (metaString != null && !metaString.isEmpty()) {
+                                    itemData = metaString;
+                                }
+                            } catch (Exception e) {
+                                // Serialization failed, use empty data
+                            }
+                        }
+                    }
+
+                    // Create the hover event with the item data
+                    // Use empty tag "{}" if no metadata, otherwise use serialized NBT
+                    hoverEvent = new HoverEvent(
+                        HoverEvent.Action.SHOW_ITEM,
+                        new net.md_5.bungee.api.chat.hover.content.Item(
+                            hoverItem.getType().getKey().toString(),
+                            hoverItem.getAmount(),
+                            net.md_5.bungee.api.chat.ItemTag.ofNbt(itemData != null ? itemData : "{}")
+                        )
+                    );
+                }
+
+                itemComponent.setHoverEvent(hoverEvent);
             } catch (Exception e) {
                 // If hover fails, just use the text without hover (fallback gracefully)
                 // This ensures the message still displays even if hover creation fails
-                SignShop.log("Failed to create hover event for item: " + e.getMessage(), java.util.logging.Level.WARNING);
             }
 
             builder.append(itemComponent);
@@ -722,5 +759,43 @@ public class itemUtil {
         if (!chunk.isLoaded())
             return chunk.load();
         return true; // Chunk already loaded
+    }
+
+    /**
+     * Custom HoverEvent Content class for Paper's Data Components format (1.20.5+).
+     * This enables full item tooltips (enchantments, lore, etc.) on Paper servers
+     * while maintaining graceful fallback on pure Spigot servers.
+     * Based on solution from BungeeCord issue #3688 (OstlerDev).
+     */
+    private static final class PaperItemHoverContent extends Content {
+        private final String id;
+        private final int count;
+        private final JsonElement components;
+
+        private PaperItemHoverContent(String id, int count, JsonElement components) {
+            this.id = id;
+            this.count = count;
+            this.components = components;
+        }
+
+        @Override
+        public HoverEvent.Action requiredAction() {
+            return HoverEvent.Action.SHOW_ITEM;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            PaperItemHoverContent that = (PaperItemHoverContent) o;
+            return count == that.count &&
+                   java.util.Objects.equals(id, that.id) &&
+                   java.util.Objects.equals(components, that.components);
+        }
+
+        @Override
+        public int hashCode() {
+            return java.util.Objects.hash(id, count, components);
+        }
     }
 }
