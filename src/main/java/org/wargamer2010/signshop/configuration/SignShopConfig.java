@@ -747,7 +747,7 @@ public class SignShopConfig {
         if (messageParts == null || messageParts.isEmpty()) {
             // No placeholders to replace, convert legacy colors and return
             String cleaned = workingMessage.replace("\\", "");
-            return new TextComponent(TextComponent.fromLegacyText(cleaned));
+            return TextComponent.fromLegacy(cleaned);
         }
 
         // Use TreeMap with StringLengthComparator to process longest placeholders first
@@ -770,10 +770,8 @@ public class SignShopConfig {
                 // Add text before placeholder (if any)
                 if (index > 0) {
                     String beforeText = workingMessage.substring(0, index);
-                    // Use fromLegacyText to preserve color codes
-                    for (BaseComponent component : TextComponent.fromLegacyText(beforeText)) {
-                        builder.append(component, ComponentBuilder.FormatRetention.NONE);
-                    }
+                    // Use fromLegacy to preserve color codes
+                    builder.append(TextComponent.fromLegacy(beforeText), ComponentBuilder.FormatRetention.NONE);
                     hasContent = true;
                 }
 
@@ -785,9 +783,7 @@ public class SignShopConfig {
                     hasContent = true;
                 } else if (value instanceof String) {
                     // Add plain text, preserving color codes
-                    for (BaseComponent component : TextComponent.fromLegacyText((String) value)) {
-                        builder.append(component, ComponentBuilder.FormatRetention.NONE);
-                    }
+                    builder.append(TextComponent.fromLegacy((String) value), ComponentBuilder.FormatRetention.NONE);
                     hasContent = true;
                 }
 
@@ -798,10 +794,8 @@ public class SignShopConfig {
 
         // Add any remaining text after all placeholders
         if (!workingMessage.isEmpty()) {
-            // Use fromLegacyText to preserve color codes
-            for (BaseComponent component : TextComponent.fromLegacyText(workingMessage)) {
-                builder.append(component, ComponentBuilder.FormatRetention.NONE);
-            }
+            // Use fromLegacy to preserve color codes
+            builder.append(TextComponent.fromLegacy(workingMessage), ComponentBuilder.FormatRetention.NONE);
             hasContent = true;
         }
 

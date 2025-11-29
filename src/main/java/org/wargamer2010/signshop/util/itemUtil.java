@@ -365,8 +365,7 @@ public class itemUtil {
 
             // Parse legacy color codes into components
             // This preserves color codes from custom item names while applying default color
-            BaseComponent[] displayComponents = TextComponent.fromLegacyText(displayText);
-            TextComponent itemComponent = new TextComponent(displayComponents);
+            BaseComponent itemComponent = TextComponent.fromLegacy(displayText);
 
             // Add hover event showing full item tooltip
             try {
