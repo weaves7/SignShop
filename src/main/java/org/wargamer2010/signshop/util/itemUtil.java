@@ -256,7 +256,7 @@ public class itemUtil {
         for(Map.Entry<ItemStack, Integer> entry : items.entrySet()) {
             if (first) first = false;
             else sItems.append(signShopConfig.getTextColor()).append(", ");
-            String newItemMeta = SignShopItemMeta.getName(entry.getKey());
+            String newItemMeta = SignShopItemMeta.getName(entry.getKey(), signShopConfig.getShowItemDetailsInChat());
             String count = (signShopConfig.getTextColor() + entry.getValue().toString() + " ");
             if(newItemMeta.isEmpty())
                 sItems.append(count).append(formatMaterialName(entry.getKey()));
@@ -328,7 +328,7 @@ public class itemUtil {
             }
 
             // Build the visible text
-            String itemName = SignShopItemMeta.getName(entry.getKey());
+            String itemName = SignShopItemMeta.getName(entry.getKey(), signShopConfig.getShowItemDetailsInChat());
             String count = entry.getValue().toString() + " ";
             // Prepend default color code so it applies unless overridden by item name colors
             String colorCode = "§" + signShopConfig.getTextColor().getChar();

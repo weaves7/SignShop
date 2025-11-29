@@ -89,6 +89,10 @@ public class SignShopItemMeta {
 
     //May need to implement my own WhatIsIt friendly name yml
     private static String getDisplayName(ItemStack stack, ChatColor color) {
+        return getDisplayName(stack, color, true);
+    }
+
+    private static String getDisplayName(ItemStack stack, ChatColor color, boolean includeEnchantments) {
         String txtcolor = getTextColor().toString();
         String customcolor = (stack.getEnchantments().isEmpty() ? color.toString() : getTextColorTwo().toString());
 
@@ -115,15 +119,19 @@ public class SignShopItemMeta {
             if(stack.getType().getMaxDurability() >= 30 && damageable.hasDamage())
                 displayname = (" Damaged " + displayname);
         }
-        if(!stack.getEnchantments().isEmpty())
+        if(includeEnchantments && !stack.getEnchantments().isEmpty())
             displayname += (txtcolor + " " + itemUtil.enchantmentsToMessageFormat(stack.getEnchantments()));
 
         return displayname;
     }
 
     public static String getName(ItemStack stack) {
+        return getName(stack, true);
+    }
+
+    public static String getName(ItemStack stack, boolean includeEnchantments) {
         if (hasNoMeta(stack))
-            return getDisplayName(stack);
+            return getDisplayName(stack, getTextColor(), includeEnchantments);
 
         ItemMeta meta = stack.getItemMeta();
 
@@ -131,8 +139,13 @@ public class SignShopItemMeta {
         for(MetaType type : metatypes) {
             if(type == MetaType.EnchantmentStorage) {
                 EnchantmentStorageMeta enchantmeta = (EnchantmentStorageMeta) meta;
-                if(enchantmeta.hasStoredEnchants())
-                    return (getDisplayName(stack, getTextColorTwo()) + " " + itemUtil.enchantmentsToMessageFormat(enchantmeta.getStoredEnchants()));
+                if(enchantmeta.hasStoredEnchants()) {
+                    String baseName = getDisplayName(stack, getTextColorTwo(), includeEnchantments);
+                    if (includeEnchantments) {
+                        return baseName + " " + itemUtil.enchantmentsToMessageFormat(enchantmeta.getStoredEnchants());
+                    }
+                    return baseName;
+                }
             } else if(type == MetaType.LeatherArmor) {
                 LeatherArmorMeta leathermeta = (LeatherArmorMeta) meta;
                 return (ColorUtil.getColorAsString(leathermeta.getColor()) + " Colored " + getDisplayName(stack));
