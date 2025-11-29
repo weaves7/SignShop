@@ -148,13 +148,13 @@ public class SignShopItemMeta {
                 }
             } else if(type == MetaType.LeatherArmor) {
                 LeatherArmorMeta leathermeta = (LeatherArmorMeta) meta;
-                return (ColorUtil.getColorAsString(leathermeta.getColor()) + " Colored " + getDisplayName(stack));
+                return (ColorUtil.getColorAsString(leathermeta.getColor()) + " Colored " + getDisplayName(stack, getTextColor(), includeEnchantments));
             } else if(type == MetaType.Skull) {
                 SkullMeta skullmeta = (SkullMeta) meta;
 
                 // Check display name first (most custom heads have one)
                 if (skullmeta.hasDisplayName()) {
-                    return getDisplayName(stack);
+                    return getDisplayName(stack, getTextColor(), includeEnchantments);
                 }
 
                 // Try to get player name safely
@@ -188,7 +188,7 @@ public class SignShopItemMeta {
                 }
 
                 // Final fallback
-                return getDisplayName(stack);
+                return getDisplayName(stack, getTextColor(), includeEnchantments);
             } else if(type == MetaType.Potion) {
                 PotionMeta potionMeta = (PotionMeta) meta;
                 StringBuilder nameBuilder = new StringBuilder();
@@ -289,7 +289,7 @@ public class SignShopItemMeta {
                             if (first) first = false;
                             else nameBuilder.append(", ");
                             nameBuilder.append(item.getAmount()).append(" ");
-                            nameBuilder.append(getName(item));
+                            nameBuilder.append(getName(item, includeEnchantments));
                         }
                     }
                     nameBuilder.append(getTextColor());
@@ -301,7 +301,7 @@ public class SignShopItemMeta {
         }
 
         stack.getItemMeta().hasDisplayName();
-        return getDisplayName(stack);
+        return getDisplayName(stack, getTextColor(), includeEnchantments);
     }
     //This method is only used for converting legacy data. Deprecation can be ignored until it is no longer valid.
     /** @noinspection deprecation*/
