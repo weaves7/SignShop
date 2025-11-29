@@ -77,6 +77,7 @@ public class SignShopConfig {
     private boolean EnableWrittenBookFix = true;
     private boolean CachePrices = true;
     private boolean ShowMaterialInCustomNames = true;
+    private boolean ShowItemDetailsInChat = true;
     private CommaDecimalSeparatorState AllowCommaDecimalSeparator = CommaDecimalSeparatorState.AUTO;
     private String ColorCode = "&";
     private String ChatPrefix = "&6[SignShop]";
@@ -262,6 +263,7 @@ public class SignShopConfig {
         EnableWrittenBookFix = ymlThing.getBoolean("EnableWrittenBookFix", EnableWrittenBookFix);
         CachePrices = ymlThing.getBoolean("CachePrices", CachePrices);
         ShowMaterialInCustomNames = ymlThing.getBoolean("ShowMaterialInCustomNames", ShowMaterialInCustomNames);
+        ShowItemDetailsInChat = ymlThing.getBoolean("ShowItemDetailsInChat", ShowItemDetailsInChat);
         AllowCommaDecimalSeparator = CommaDecimalSeparatorState.fromName(ymlThing.getString("AllowCommaDecimalSeparator", AllowCommaDecimalSeparator.name));
         ColorCode = ymlThing.getString("ColorCode", ColorCode);
         ChatPrefix = ymlThing.getString("ChatPrefix", ChatPrefix);
@@ -972,6 +974,10 @@ public class SignShopConfig {
 
     public boolean getShowMaterialInCustomNames() {
         return ShowMaterialInCustomNames;
+    }
+
+    public boolean getShowItemDetailsInChat() {
+        return ShowItemDetailsInChat;
     }
 
     public boolean getEnableTutorialMessages() {

@@ -7,7 +7,6 @@ import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.chat.hover.content.Content;
-import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
@@ -25,7 +24,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.wargamer2010.signshop.Seller;
-import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.data.*;
 import org.wargamer2010.signshop.configuration.SignShopConfig;
 import org.wargamer2010.signshop.data.Storage;
@@ -237,12 +235,10 @@ public class itemUtil {
         return tags.copyTags(item, isBackup);
     }
 
-   @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
     public static String itemStackToString(ItemStack[] isStacks) {
-        if(isStacks == null || isStacks.length == 0)
+        if(isStacks == null)
             return "";
         HashMap<ItemStack, Integer> items = new HashMap<>();
-        HashMap<ItemStack, Map<Enchantment, Integer>> enchantments = new HashMap<>();
         StringBuilder sItems = new StringBuilder();
         boolean first = true;
         int tempAmount;
@@ -251,8 +247,6 @@ public class itemUtil {
                 continue;
             ItemStack isBackup = getSingleAmountOfStack(item);
 
-            if(!item.getEnchantments().isEmpty())
-                enchantments.put(isBackup, item.getEnchantments());
             if(items.containsKey(isBackup)) {
                 tempAmount = (items.get(isBackup) + item.getAmount());
                 items.put(isBackup, tempAmount);
@@ -268,20 +262,24 @@ public class itemUtil {
                 sItems.append(count).append(formatMaterialName(entry.getKey()));
             else
                 sItems.append(count).append(newItemMeta);
-            if(itemUtil.isWriteableBook(entry.getKey())) {
-                IBookItem book = BookFactory.getBookItem(entry.getKey());
-                if(book != null && (book.getAuthor() != null || book.getTitle() != null))
-                    sItems.append(" (").append(book.getTitle() == null ? "Unknown" : book.getTitle()).append(" by ").append(book.getAuthor() == null ? "Unknown" : book.getAuthor()).append(")");
-            }
-            if (entry.getKey().hasItemMeta() && entry.getKey().getItemMeta().hasLore()){
-                sItems.append(signShopConfig.getTextColor()).append("<").append(ChatColor.RESET);
-                boolean firstLore = true;
-                for (String loreLine : entry.getKey().getItemMeta().getLore()){
-                    if (firstLore) firstLore = false;
-                    else sItems.append(signShopConfig.getTextColor()).append(", ").append(ChatColor.RESET);
-                    sItems.append(loreLine);
+
+            // Conditionally add extra details in visible text (matches itemStackToComponent behavior)
+            if (signShopConfig.getShowItemDetailsInChat()) {
+                if(itemUtil.isWriteableBook(entry.getKey())) {
+                    IBookItem book = BookFactory.getBookItem(entry.getKey());
+                    if(book != null && (book.getAuthor() != null || book.getTitle() != null))
+                        sItems.append(" (").append(book.getTitle() == null ? "Unknown" : book.getTitle()).append(" by ").append(book.getAuthor() == null ? "Unknown" : book.getAuthor()).append(")");
                 }
-                sItems.append(signShopConfig.getTextColor()).append("> ").append(ChatColor.RESET);
+                if (entry.getKey().hasItemMeta() && entry.getKey().getItemMeta().hasLore()){
+                    sItems.append(signShopConfig.getTextColor()).append("<").append(ChatColor.RESET);
+                    boolean firstLore = true;
+                    for (String loreLine : entry.getKey().getItemMeta().getLore()){
+                        if (firstLore) firstLore = false;
+                        else sItems.append(signShopConfig.getTextColor()).append(", ").append(ChatColor.RESET);
+                        sItems.append(loreLine);
+                    }
+                    sItems.append(signShopConfig.getTextColor()).append("> ").append(ChatColor.RESET);
+                }
             }
             sItems.append(ChatColor.WHITE);
         }
@@ -297,21 +295,19 @@ public class itemUtil {
      * @param isStacks The item stacks to convert
      * @return BaseComponent with hover events, or simple TextComponent if items is null/empty
      */
+    @SuppressWarnings("deprecation") // Bukkit.getUnsafe() required for Paper runtime detection
     public static BaseComponent itemStackToComponent(ItemStack[] isStacks) {
-        if (isStacks == null || isStacks.length == 0)
+        if (isStacks == null)
             return new TextComponent("");
 
         // Consolidate duplicate items (same logic as itemStackToString)
         HashMap<ItemStack, Integer> items = new HashMap<>();
-        HashMap<ItemStack, Map<Enchantment, Integer>> enchantments = new HashMap<>();
 
         for (ItemStack item : isStacks) {
             if (item == null)
                 continue;
             ItemStack isBackup = getSingleAmountOfStack(item);
 
-            if (!item.getEnchantments().isEmpty())
-                enchantments.put(isBackup, item.getEnchantments());
             if (items.containsKey(isBackup)) {
                 int tempAmount = (items.get(isBackup) + item.getAmount());
                 items.put(isBackup, tempAmount);
@@ -331,33 +327,36 @@ public class itemUtil {
                 builder.append(", ").color(net.md_5.bungee.api.ChatColor.getByChar(signShopConfig.getTextColor().getChar()));
             }
 
-            // Build the visible text (same as itemStackToString logic)
+            // Build the visible text
             String itemName = SignShopItemMeta.getName(entry.getKey());
             String count = entry.getValue().toString() + " ";
             // Prepend default color code so it applies unless overridden by item name colors
             String colorCode = "§" + signShopConfig.getTextColor().getChar();
             String displayText = colorCode + count + (itemName.isEmpty() ? formatMaterialName(entry.getKey()) : itemName);
 
-            // Add book info if applicable
-            if (isWriteableBook(entry.getKey())) {
-                IBookItem book = BookFactory.getBookItem(entry.getKey());
-                if (book != null && (book.getAuthor() != null || book.getTitle() != null)) {
-                    displayText += " (" + (book.getTitle() == null ? "Unknown" : book.getTitle()) +
-                                  " by " + (book.getAuthor() == null ? "Unknown" : book.getAuthor()) + ")";
+            // Conditionally add extra details in visible text (always shown in hover tooltip)
+            if (signShopConfig.getShowItemDetailsInChat()) {
+                // Add book info if applicable
+                if (isWriteableBook(entry.getKey())) {
+                    IBookItem book = BookFactory.getBookItem(entry.getKey());
+                    if (book != null && (book.getAuthor() != null || book.getTitle() != null)) {
+                        displayText += " (" + (book.getTitle() == null ? "Unknown" : book.getTitle()) +
+                                      " by " + (book.getAuthor() == null ? "Unknown" : book.getAuthor()) + ")";
+                    }
                 }
-            }
 
-            // Add lore preview if applicable
-            if (entry.getKey().hasItemMeta() && entry.getKey().getItemMeta().hasLore()) {
-                StringBuilder lorePreview = new StringBuilder(colorCode + " <");
-                boolean firstLore = true;
-                for (String loreLine : entry.getKey().getItemMeta().getLore()) {
-                    if (firstLore) firstLore = false;
-                    else lorePreview.append(colorCode).append(", ").append(ChatColor.RESET);
-                    lorePreview.append(loreLine);  // Keep original lore colors!
+                // Add lore preview if applicable
+                if (entry.getKey().hasItemMeta() && entry.getKey().getItemMeta().hasLore()) {
+                    StringBuilder lorePreview = new StringBuilder(colorCode + " <");
+                    boolean firstLore = true;
+                    for (String loreLine : entry.getKey().getItemMeta().getLore()) {
+                        if (firstLore) firstLore = false;
+                        else lorePreview.append(colorCode).append(", ").append(ChatColor.RESET);
+                        lorePreview.append(loreLine);  // Keep original lore colors!
+                    }
+                    lorePreview.append(colorCode).append("> ").append(ChatColor.RESET);
+                    displayText += lorePreview.toString();
                 }
-                lorePreview.append(colorCode).append("> ").append(ChatColor.RESET);
-                displayText += lorePreview.toString();
             }
 
             // Add trailing white color to match itemStackToString behavior
@@ -377,9 +376,10 @@ public class itemUtil {
 
                 // Try Paper's serializeItemAsJson() first for full tooltip support (1.20.5+)
                 // Uses reflection since this method only exists on Paper, not pure Spigot
+                java.lang.reflect.Method serializeMethod;
                 try {
                     // Call Bukkit.getUnsafe().serializeItemAsJson(item) via reflection
-                    java.lang.reflect.Method serializeMethod = Bukkit.getUnsafe().getClass()
+                    serializeMethod = Bukkit.getUnsafe().getClass()
                         .getMethod("serializeItemAsJson", ItemStack.class);
                     JsonObject itemJson = (JsonObject) serializeMethod.invoke(Bukkit.getUnsafe(), hoverItem);
 
@@ -689,7 +689,7 @@ public class itemUtil {
      * @since 5.2.0
      */
     public static boolean hasNullItems(ItemStack[] items) {
-        if (items == null || items.length == 0) {
+        if (items == null) {
             return false;
         }
 
