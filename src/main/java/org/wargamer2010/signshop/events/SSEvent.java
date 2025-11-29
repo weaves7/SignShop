@@ -12,13 +12,13 @@ import java.util.Map;
 public abstract class SSEvent extends Event implements Cancellable {
     private boolean bCancelled = false;
     private boolean bCanBeCancelled = true;
-    private Map<String, String> messageParts = new HashMap<>();
+    private Map<String, Object> messageParts = new HashMap<>();
 
     public SSEvent() {
 
     }
 
-    public SSEvent(Map<String, String> pMessageParts) {
+    public SSEvent(Map<String, Object> pMessageParts) {
         messageParts = pMessageParts;
     }
 
@@ -42,11 +42,11 @@ public abstract class SSEvent extends Event implements Cancellable {
         this.bCanBeCancelled = pCanBeCancelled;
     }
 
-    public Map<String, String> getMessageParts() {
+    public Map<String, Object> getMessageParts() {
         return messageParts;
     }
 
-    public void setMessagePart(String part, String value) {
+    public void setMessagePart(String part, Object value) {
         messageParts.put(part, value);
     }
 

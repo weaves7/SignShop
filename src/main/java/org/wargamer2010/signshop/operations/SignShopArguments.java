@@ -50,7 +50,7 @@ public class SignShopArguments implements IMessagePartContainer {
         }
     };
     private SSMoneyEventType moneyEventType = SSMoneyEventType.Unknown;
-    private final Map<String, String> messageParts = new LinkedHashMap<>();
+    private final Map<String, Object> messageParts = new LinkedHashMap<>();
 
     public SignShopArguments(double pfPrice, ItemStack[] pisItems, List<Block> pContainables, List<Block> pActivatables,
                              SignShopPlayer pssPlayer, SignShopPlayer pssOwner, Block pbSign, String psOperation, BlockFace pbfBlockFace, Action ac, SignShopArgumentsType type) {
@@ -123,7 +123,7 @@ public class SignShopArguments implements IMessagePartContainer {
         }
 
         if (isItems.get() != null && isItems.get().length > 0) {
-            setMessagePart("!items", itemUtil.itemStackToString(isItems.get()));
+            setMessagePart("!items", org.wargamer2010.signshop.util.ItemMessagePart.fromItems(isItems.get()));
         }
     }
 
@@ -245,7 +245,8 @@ public class SignShopArguments implements IMessagePartContainer {
         return (bPriceModApplied = true);
     }
 
-    public void setMessagePart(String name, String value) {
+    @Override
+    public void setMessagePart(String name, Object value) {
         messageParts.put(name, value);
         if (forceMessageKeys.containsKey(name))
             name = forceMessageKeys.get(name);
@@ -256,17 +257,31 @@ public class SignShopArguments implements IMessagePartContainer {
         return messageParts.containsKey(name);
     }
 
+    /**
+     * Gets a message part as a string. If the value is an ItemMessagePart,
+     * returns its cached string representation.
+     *
+     * @param name The message part name
+     * @return The string value, or empty string if not found
+     */
     public String getMessagePart(String name) {
-        if (hasMessagePart(name))
-            return messageParts.get(name);
+        if (hasMessagePart(name)) {
+            Object value = messageParts.get(name);
+            if (value instanceof String) {
+                return (String) value;
+            } else if (value instanceof org.wargamer2010.signshop.util.ItemMessagePart) {
+                return ((org.wargamer2010.signshop.util.ItemMessagePart) value).getString();
+            }
+        }
         return "";
     }
 
-    public Map<String, String> getMessageParts() {
+    @Override
+    public Map<String, Object> getMessageParts() {
         return Collections.unmodifiableMap(messageParts);
     }
 
-    public Map<String, String> getRawMessageParts() {
+    public Map<String, Object> getRawMessageParts() {
         return messageParts;
     }
 }

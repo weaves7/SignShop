@@ -1,5 +1,8 @@
 package org.wargamer2010.signshop.configuration;
 
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -13,6 +16,7 @@ import org.wargamer2010.signshop.operations.SignShopOperation;
 import org.wargamer2010.signshop.operations.SignShopOperationListItem;
 import org.wargamer2010.signshop.operations.runCommand;
 import org.wargamer2010.signshop.specialops.*;
+import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.economyUtil;
 import org.wargamer2010.signshop.util.itemUtil;
 import org.wargamer2010.signshop.util.signshopUtil;
@@ -498,7 +502,7 @@ public class SignShopConfig {
         closeStream(os);
     }
 
-    public String getError(String sType, Map<String, String> messageParts) {
+    public String getError(String sType, Map<String, Object> messageParts) {
         Map<String, String> localisedError = Errors.get(preferedLanguage);
         Map<String, String> defaultError = Errors.get(baseLanguage);
 
@@ -515,7 +519,7 @@ public class SignShopConfig {
         return fillInBlanks(coloredError, messageParts);
     }
 
-    public String getMessage(String sType, String pOperation, Map<String, String> messageParts) {
+    public String getMessage(String sType, String pOperation, Map<String, Object> messageParts) {
         Map<String, HashMap<String, String>> localisedMessage = Messages.get(preferedLanguage);
         Map<String, HashMap<String, String>> defaultMessage = Messages.get(baseLanguage);
 
@@ -536,6 +540,62 @@ public class SignShopConfig {
 
         String coloredMessage = ChatColor.translateAlternateColorCodes(getColorCode(), message);
         return fillInBlanks(coloredMessage, messageParts);
+    }
+
+    /**
+     * Gets a message as a BaseComponent with hover events for rich content like items.
+     *
+     * @param sType The message type (e.g., "transaction", "confirm")
+     * @param pOperation The operation name (e.g., "Buy", "Sell")
+     * @param messageParts Map of placeholders to values (String or ItemMessagePart)
+     * @return BaseComponent with hover tooltips
+     */
+    public BaseComponent getMessageAsComponent(String sType, String pOperation, Map<String, Object> messageParts) {
+        Map<String, HashMap<String, String>> localisedMessage = Messages.get(preferedLanguage);
+        Map<String, HashMap<String, String>> defaultMessage = Messages.get(baseLanguage);
+
+        String sOperation = pOperation;
+        if (OperationAliases.containsKey(sOperation))
+            sOperation = OperationAliases.get(sOperation);
+
+        String message;
+        if (!localisedMessage.containsKey(sType) || !localisedMessage.get(sType).containsKey(sOperation) || localisedMessage.get(sType).get(sOperation) == null) {
+            if (!defaultMessage.containsKey(sType) || !defaultMessage.get(sType).containsKey(sOperation) || defaultMessage.get(sType).get(sOperation) == null) {
+                return new TextComponent("");
+            }
+            else
+                message = defaultMessage.get(sType).get(sOperation);
+        }
+        else
+            message = localisedMessage.get(sType).get(sOperation);
+
+        String coloredMessage = ChatColor.translateAlternateColorCodes(getColorCode(), message);
+        return fillInBlanksAsComponent(coloredMessage, messageParts);
+    }
+
+    /**
+     * Gets an error message as a BaseComponent with hover events.
+     *
+     * @param sType The error type
+     * @param messageParts Map of placeholders to values (String or ItemMessagePart)
+     * @return BaseComponent with hover tooltips
+     */
+    public BaseComponent getErrorAsComponent(String sType, Map<String, Object> messageParts) {
+        Map<String, String> localisedError = Errors.get(preferedLanguage);
+        Map<String, String> defaultError = Errors.get(baseLanguage);
+
+        String error;
+        if (!localisedError.containsKey(sType) || localisedError.get(sType) == null) {
+            if (!defaultError.containsKey(sType) || defaultError.get(sType) == null)
+                return new TextComponent("");
+            else
+                error = defaultError.get(sType);
+        }
+        else
+            error = localisedError.get(sType);
+
+        String coloredError = ChatColor.translateAlternateColorCodes(getColorCode(), error);
+        return fillInBlanksAsComponent(coloredError, messageParts);
     }
 
     public List<String> getBlocks(String pOp) {
@@ -635,14 +695,32 @@ public class SignShopConfig {
         }
     }
 
-    public String fillInBlanks(String pMessage, Map<String, String> messageParts) {
+    /**
+     * Fills in placeholder values in a message template. Values can be Strings or ItemMessagePart objects.
+     * For ItemMessagePart values, the cached string representation is used.
+     *
+     * @param pMessage The message template with placeholders (e.g., "You bought !items for !price!")
+     * @param messageParts Map of placeholder names to values (String or ItemMessagePart)
+     * @return The message with all placeholders replaced
+     */
+    public String fillInBlanks(String pMessage, Map<String, Object> messageParts) {
         String message = pMessage;
 
         if (messageParts == null)
             return message;
 
+        // Use TreeMap with StringLengthComparator to process longest placeholders first
+        // This prevents "!item" from matching when "!items" exists
         TreeMap<String, String> temp = new TreeMap<>(new StringLengthComparator());
-        temp.putAll(messageParts);
+
+        // Convert all values to strings (extract from ItemMessagePart if needed)
+        for (Map.Entry<String, Object> entry : messageParts.entrySet()) {
+            if (entry.getValue() instanceof String) {
+                temp.put(entry.getKey(), (String) entry.getValue());
+            } else if (entry.getValue() instanceof org.wargamer2010.signshop.util.ItemMessagePart) {
+                temp.put(entry.getKey(), ((org.wargamer2010.signshop.util.ItemMessagePart) entry.getValue()).getString());
+            }
+        }
 
         for (Map.Entry<String, String> part : temp.entrySet()) {
             if (part != null && part.getKey() != null && part.getValue() != null)
@@ -650,6 +728,84 @@ public class SignShopConfig {
         }
         message = message.replace("\\", "");
         return message;
+    }
+
+    /**
+     * Fills in placeholder values in a message template and returns a BaseComponent with hover events.
+     * This method processes ItemMessagePart values as rich hover tooltips showing full item details.
+     *
+     * @param pMessage The message template with placeholders (e.g., "You bought !items for !price!")
+     * @param messageParts Map of placeholder names to values (String or ItemMessagePart)
+     * @return BaseComponent with hover events for items
+     */
+    public BaseComponent fillInBlanksAsComponent(String pMessage, Map<String, Object> messageParts) {
+        if (pMessage == null || pMessage.isEmpty())
+            return new TextComponent("");
+
+        String workingMessage = ChatColor.translateAlternateColorCodes(getColorCode(), pMessage);
+
+        if (messageParts == null || messageParts.isEmpty()) {
+            // No placeholders to replace, return as plain component
+            return new TextComponent(workingMessage.replace("\\", ""));
+        }
+
+        // Use TreeMap with StringLengthComparator to process longest placeholders first
+        // This prevents "!item" from matching when "!items" exists
+        TreeMap<String, Object> sortedParts = new TreeMap<>(new StringLengthComparator());
+        sortedParts.putAll(messageParts);
+
+        ComponentBuilder builder = new ComponentBuilder("");
+        boolean hasContent = false;
+
+        // Process placeholders from longest to shortest
+        for (Map.Entry<String, Object> entry : sortedParts.entrySet()) {
+            String placeholder = entry.getKey();
+            Object value = entry.getValue();
+
+            // Find all occurrences of this placeholder and replace them
+            while (workingMessage.contains(placeholder)) {
+                int index = workingMessage.indexOf(placeholder);
+
+                // Add text before placeholder (if any)
+                if (index > 0) {
+                    String beforeText = workingMessage.substring(0, index);
+                    builder.append(new TextComponent(beforeText), ComponentBuilder.FormatRetention.NONE);
+                    hasContent = true;
+                }
+
+                // Add placeholder value (either as text or component with hover)
+                if (value instanceof ItemMessagePart) {
+                    // Add item component with hover tooltip
+                    BaseComponent itemComponent = itemUtil.itemStackToComponent(((ItemMessagePart) value).getItems());
+                    builder.append(itemComponent, ComponentBuilder.FormatRetention.NONE);
+                    hasContent = true;
+                } else if (value instanceof String) {
+                    // Add plain text
+                    builder.append((String) value, ComponentBuilder.FormatRetention.NONE);
+                    hasContent = true;
+                }
+
+                // Update working message to continue processing
+                workingMessage = workingMessage.substring(index + placeholder.length());
+            }
+        }
+
+        // Add any remaining text after all placeholders
+        if (!workingMessage.isEmpty()) {
+            builder.append(new TextComponent(workingMessage), ComponentBuilder.FormatRetention.NONE);
+            hasContent = true;
+        }
+
+        // Remove escape characters
+        BaseComponent[] components = hasContent ? builder.create() : new BaseComponent[0];
+        for (BaseComponent component : components) {
+            if (component instanceof TextComponent) {
+                TextComponent tc = (TextComponent) component;
+                tc.setText(tc.getText().replace("\\", ""));
+            }
+        }
+
+        return components.length > 0 ? new TextComponent(components) : new TextComponent("");
     }
 
     private void setupBlacklist() {

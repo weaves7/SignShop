@@ -1,5 +1,7 @@
 package org.wargamer2010.signshop.player;
 
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.TextComponent;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -94,6 +96,48 @@ public class SignShopPlayer {
             return;
         String message = (ChatColor.GOLD + SignShop.getInstance().getSignShopConfig().getChatPrefix() + ChatColor.WHITE + " " + sMessage);
         getPlayer().sendMessage(message);
+    }
+
+    /**
+     * Sends a rich text message with hover events (e.g., item tooltips) to the player.
+     * The message respects cooldown settings and will be queued if necessary.
+     *
+     * @param component The component to send (with hover events)
+     */
+    public void sendMessage(BaseComponent component) {
+        if (component == null || getPlayer() == null || ignoreMessages)
+            return;
+
+        // Convert component to plain text for cooldown deduplication
+        String plainText = component.toLegacyText();
+        if (plainText == null || plainText.trim().isEmpty())
+            return;
+
+        if (SignShop.getInstance().getSignShopConfig().getMessageCooldown() <= 0) {
+            sendNonDelayedMessage(component);
+            return;
+        }
+
+        MessageWorker.init();
+        MessageWorker.OfferMessage(plainText, component, this);
+    }
+
+    /**
+     * Sends a rich text message immediately without cooldown delay.
+     *
+     * @param component The component to send
+     */
+    public void sendNonDelayedMessage(BaseComponent component) {
+        if (component == null || getPlayer() == null || ignoreMessages)
+            return;
+
+        // Add chat prefix
+        TextComponent prefixedMessage = new TextComponent(
+            ChatColor.GOLD + SignShop.getInstance().getSignShopConfig().getChatPrefix() + ChatColor.WHITE + " "
+        );
+        prefixedMessage.addExtra(component);
+
+        getPlayer().spigot().sendMessage(prefixedMessage);
     }
 
     public String getName() {

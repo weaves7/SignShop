@@ -134,7 +134,7 @@ public class SimpleShopProtector implements Listener {
             signshopUtil.fixCreativeModeSignRendering(event.getBlock(), event.getPlayer().getPlayer());
 
             if (event.getShop().isOwner(player) || event.getPlayer().isOp() || player.hasPerm("Signshop.Destroy.Others", true)) {
-                Map<String, String> temp = new LinkedHashMap<>();
+                Map<String, Object> temp = new LinkedHashMap<>();
                 temp.put("!destroymaterial", signshopUtil.capFirstLetter(SignShop.getInstance().getSignShopConfig().getDestroyMaterial().name().toLowerCase()));
 
                 event.getPlayer().sendMessage(SignShop.getInstance().getSignShopConfig().getError("use_item_to_destroy_shop", temp));

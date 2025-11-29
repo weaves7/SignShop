@@ -1,5 +1,10 @@
 package org.wargamer2010.signshop.util;
 
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
@@ -16,6 +21,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.wargamer2010.signshop.Seller;
+import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.data.*;
 import org.wargamer2010.signshop.configuration.SignShopConfig;
 import org.wargamer2010.signshop.data.Storage;
@@ -277,6 +283,127 @@ public class itemUtil {
         }
 
         return sItems.toString();
+    }
+
+    /**
+     * Converts an array of ItemStacks to a TextComponent with hover tooltips showing full item details.
+     * Each item in the list gets its own hover event displaying the complete item information
+     * (enchantments, lore, durability, attributes, etc.) as if hovering over it in an inventory.
+     *
+     * @param isStacks The item stacks to convert
+     * @return BaseComponent with hover events, or simple TextComponent if items is null/empty
+     */
+    public static BaseComponent itemStackToComponent(ItemStack[] isStacks) {
+        if (isStacks == null || isStacks.length == 0)
+            return new TextComponent("");
+
+        // Consolidate duplicate items (same logic as itemStackToString)
+        HashMap<ItemStack, Integer> items = new HashMap<>();
+        HashMap<ItemStack, Map<Enchantment, Integer>> enchantments = new HashMap<>();
+
+        for (ItemStack item : isStacks) {
+            if (item == null)
+                continue;
+            ItemStack isBackup = getSingleAmountOfStack(item);
+
+            if (!item.getEnchantments().isEmpty())
+                enchantments.put(isBackup, item.getEnchantments());
+            if (items.containsKey(isBackup)) {
+                int tempAmount = (items.get(isBackup) + item.getAmount());
+                items.put(isBackup, tempAmount);
+            } else {
+                items.put(isBackup, item.getAmount());
+            }
+        }
+
+        // Build component with hover events for each item
+        ComponentBuilder builder = new ComponentBuilder("");
+        boolean first = true;
+
+        for (Map.Entry<ItemStack, Integer> entry : items.entrySet()) {
+            if (first) {
+                first = false;
+            } else {
+                builder.append(", ").color(net.md_5.bungee.api.ChatColor.getByChar(signShopConfig.getTextColor().getChar()));
+            }
+
+            // Build the visible text (same as itemStackToString logic)
+            String itemName = SignShopItemMeta.getName(entry.getKey());
+            String count = entry.getValue().toString() + " ";
+            String displayText = count + (itemName.isEmpty() ? formatMaterialName(entry.getKey()) : itemName);
+
+            // Add book info if applicable
+            if (isWriteableBook(entry.getKey())) {
+                IBookItem book = BookFactory.getBookItem(entry.getKey());
+                if (book != null && (book.getAuthor() != null || book.getTitle() != null)) {
+                    displayText += " (" + (book.getTitle() == null ? "Unknown" : book.getTitle()) +
+                                  " by " + (book.getAuthor() == null ? "Unknown" : book.getAuthor()) + ")";
+                }
+            }
+
+            // Add lore preview if applicable
+            if (entry.getKey().hasItemMeta() && entry.getKey().getItemMeta().hasLore()) {
+                StringBuilder lorePreview = new StringBuilder(" <");
+                boolean firstLore = true;
+                for (String loreLine : entry.getKey().getItemMeta().getLore()) {
+                    if (firstLore) firstLore = false;
+                    else lorePreview.append(", ");
+                    lorePreview.append(ChatColor.stripColor(loreLine));
+                }
+                lorePreview.append(">");
+                displayText += lorePreview.toString();
+            }
+
+            // Create text component with hover event
+            TextComponent itemComponent = new TextComponent(displayText);
+            itemComponent.setColor(net.md_5.bungee.api.ChatColor.getByChar(signShopConfig.getTextColor().getChar()));
+
+            // Add hover event showing full item tooltip
+            try {
+                // Create a copy of the item with the correct amount for tooltip
+                ItemStack hoverItem = entry.getKey().clone();
+                hoverItem.setAmount(entry.getValue());
+
+                // Serialize the item's data for the hover tooltip
+                // NOTE: Due to a known BungeeCord limitation (issue #3688), hover tooltips
+                // only show the item type on Spigot 1.20.5+/1.21, not enchantments/lore/etc.
+                // This will be fixed when BungeeCord updates ItemTag.ofNbt() to support
+                // the new Data Components format introduced in Minecraft 1.20.5.
+                String itemData = null;
+                if (hoverItem.hasItemMeta()) {
+                    ItemMeta meta = hoverItem.getItemMeta();
+                    if (meta != null) {
+                        try {
+                            String metaString = meta.getAsString();
+                            if (metaString != null && !metaString.isEmpty()) {
+                                itemData = metaString;
+                            }
+                        } catch (Exception e) {
+                            // Serialization failed, use empty data
+                        }
+                    }
+                }
+
+                // Create the hover event with the item data
+                // Use empty tag "{}" if no metadata, otherwise use serialized data (component or NBT format)
+                itemComponent.setHoverEvent(new HoverEvent(
+                    HoverEvent.Action.SHOW_ITEM,
+                    new net.md_5.bungee.api.chat.hover.content.Item(
+                        hoverItem.getType().getKey().toString(),
+                        hoverItem.getAmount(),
+                        net.md_5.bungee.api.chat.ItemTag.ofNbt(itemData != null ? itemData : "{}")
+                    )
+                ));
+            } catch (Exception e) {
+                // If hover fails, just use the text without hover (fallback gracefully)
+                // This ensures the message still displays even if hover creation fails
+                SignShop.log("Failed to create hover event for item: " + e.getMessage(), java.util.logging.Level.WARNING);
+            }
+
+            builder.append(itemComponent);
+        }
+
+        return new TextComponent(builder.create());
     }
 
     @SuppressWarnings("deprecation")

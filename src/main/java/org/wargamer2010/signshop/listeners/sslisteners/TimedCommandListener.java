@@ -23,8 +23,8 @@ public class TimedCommandListener implements Listener {
                 for (String command : commands) {
                     String sCommand = command;
                     if (sCommand != null && !sCommand.isEmpty()) {
-                        sCommand = SignShop.getInstance().getSignShopConfig().fillInBlanks(sCommand, cmd.getMessageParts());
-                        sCommand = SignShop.getInstance().getSignShopConfig().fillInBlanks(sCommand, cmd.getMessageParts());
+                        sCommand = SignShop.getInstance().getSignShopConfig().fillInBlanks(sCommand, cmd.getMessagePartsAsObject());
+                        sCommand = SignShop.getInstance().getSignShopConfig().fillInBlanks(sCommand, cmd.getMessagePartsAsObject());
                         if (cmd.getCommandType().equals("asOriginalUser"))
                             SignShop.log("Delayed commands can not be run asOriginalUser, shop type: " + cmd.getShopType(), Level.WARNING);
                         if (cmd.getCommandType().equals("asUser"))

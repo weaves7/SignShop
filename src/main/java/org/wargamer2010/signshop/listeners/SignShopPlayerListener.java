@@ -1,5 +1,6 @@
 package org.wargamer2010.signshop.listeners;
 
+import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -386,7 +387,10 @@ public class SignShopPlayerListener implements Listener {
             ssArgs.setArgumentType(SignShopArgumentsType.Run);
             ssArgs.getPrice().set(pretransactevent.getPrice());
             if (ssArgs.isLeftClicking()) {
-                ssPlayer.sendMessage(SignShop.getInstance().getSignShopConfig().getMessage("confirm", ssArgs.getOperation().get(), ssArgs.getMessageParts()));
+                // Use component-based message for rich hover tooltips on items
+                BaseComponent confirmMessage = SignShop.getInstance().getSignShopConfig()
+                        .getMessageAsComponent("confirm", ssArgs.getOperation().get(), ssArgs.getMessageParts());
+                ssPlayer.sendMessage(confirmMessage);
                 ssArgs.reset();
                 return;
             }
@@ -410,9 +414,9 @@ public class SignShopPlayerListener implements Listener {
                 player.updateInventory();
             }
             List<String> chests = new LinkedList<>();
-            for (Map.Entry<String, String> entry : ssArgs.getMessageParts().entrySet())
+            for (Map.Entry<String, Object> entry : ssArgs.getMessageParts().entrySet())
                 if (entry.getKey().contains("chest"))
-                    chests.add(entry.getValue());
+                    chests.add(entry.getValue().toString());
             String[] sChests = new String[chests.size()];
             chests.toArray(sChests);
             String items = (!ssArgs.hasMessagePart("!items") ? signshopUtil.implode(sChests, " and ") : ssArgs.getMessagePart("!items"));

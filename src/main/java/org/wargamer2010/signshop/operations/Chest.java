@@ -5,6 +5,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.Seller;
 import org.wargamer2010.signshop.SignShop;
+import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.itemUtil;
 import org.wargamer2010.signshop.util.signshopUtil;
 
@@ -69,7 +70,7 @@ public class Chest implements SignShopOperation {
         // In case the next operation doesn't write to !items, in other cases it will be overwritten (by f.e. takePlayerItems)
         ItemStack[] isTotalItems = itemUtil.getAllItemStacksForContainables(ssArgs.getContainables().get());
         if(isTotalItems.length > 0) {
-            ssArgs.setMessagePart("!items", itemUtil.itemStackToString(isTotalItems));
+            ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(isTotalItems));
             ssArgs.miscSettings.put("chest" + iChestnumber, signshopUtil.implode(itemUtil.convertItemStacksToString(isTotalItems), separator));
         }
 

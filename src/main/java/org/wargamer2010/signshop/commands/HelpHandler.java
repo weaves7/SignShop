@@ -67,7 +67,7 @@ public class HelpHandler implements ICommandHandler {
             messageBuilder.append(signList);
             messageBuilder.append(moreInfo);
         } else if(!command.isEmpty() && args.length > 0 && command.equals("sign")) {
-            Map<String, String> messageParts = new LinkedHashMap<>();
+            Map<String, Object> messageParts = new LinkedHashMap<>();
             messageParts.put("!linkmaterial", signshopUtil.capFirstLetter(SignShop.getInstance().getSignShopConfig().getLinkMaterial().name().toLowerCase()));
 
             String temp = SignShop.getInstance().getSignShopConfig().getMessage("help", args[0], messageParts).replace(". ", ".\n- ");

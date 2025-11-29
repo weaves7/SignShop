@@ -31,7 +31,11 @@ public class StockChecker implements Listener {
         ItemStack[] allStacks = itemUtil.getAllItemStacksForContainables(event.getShop().getContainables());
         ItemStack[] filtered = itemUtil.filterStacks(allStacks, event.getShop().getItems());
 
-        event.setMessagePart("!shopinventory", (filtered.length == 0 ? "nothing" : itemUtil.itemStackToString(filtered)));
+        if (filtered.length == 0) {
+            event.setMessagePart("!shopinventory", "nothing");
+        } else {
+            event.setMessagePart("!shopinventory", itemUtil.itemStackToString(filtered));
+        }
         event.getPlayer().sendMessage(SignShop.getInstance().getSignShopConfig().getError("shop_contains", event.getMessageParts()));
     }
 }

@@ -3,6 +3,7 @@ package org.wargamer2010.signshop.operations;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.SignShop;
+import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.itemUtil;
 
 public class takeShopItems implements SignShopOperation {
@@ -20,7 +21,7 @@ public class takeShopItems implements SignShopOperation {
         }
         if(isTotalItems.length > 0)
             ssArgs.getItems().set(isTotalItems);
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         return true;
     }
 
@@ -32,7 +33,7 @@ public class takeShopItems implements SignShopOperation {
         }
 
         Boolean bStockOK = itemUtil.stockOKForContainables(ssArgs.getContainables().get(), ssArgs.getItems().get(), true);
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         if(!bStockOK)
             ssArgs.sendFailedRequirementsMessage("out_of_stock");
         if(!bStockOK && activeCheck)
@@ -53,7 +54,7 @@ public class takeShopItems implements SignShopOperation {
             itemUtil.updateStockStatus(ssArgs.getSign().get(), SignShop.getInstance().getSignShopConfig().getOutOfStockColor());
         else
             itemUtil.updateStockStatus(ssArgs.getSign().get(), SignShop.getInstance().getSignShopConfig().getInStockColor());
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         return true;
     }
 }

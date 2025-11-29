@@ -223,7 +223,7 @@ public class Storage implements Listener {
         }
 
         if (SignShop.getInstance().getSignShopConfig().ExceedsMaxChestsPerShop(seller_containables.size())) {
-            Map<String, String> parts = new LinkedHashMap<>();
+            Map<String, Object> parts = new LinkedHashMap<>();
             int x = seller_sign.getX();
             int y = seller_sign.getY();
             int z = seller_sign.getZ();

@@ -34,7 +34,7 @@ public class SSPreTransactionEvent extends SSEvent implements IOperationEvent {
                                 SignShopPlayer pOwner,
                                 Block pSign,
                                 String pOperation,
-                                Map<String, String> pMessageParts,
+                                Map<String, Object> pMessageParts,
                                 Seller pShop,
                                 Action pAction,
                                 boolean pRequirementsOK) {

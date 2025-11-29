@@ -27,6 +27,7 @@ import org.wargamer2010.signshop.operations.SignShopOperationListItem;
 import org.wargamer2010.signshop.player.PlayerCache;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 import org.wargamer2010.signshop.specialops.SignShopSpecialOp;
+import org.wargamer2010.signshop.util.ItemMessagePart;
 
 
 import java.util.*;
@@ -273,7 +274,7 @@ public class signshopUtil {
 
     public static String validateBankSign(List<Block> clickedBlocks, SignShopPlayer player) {
         List<String> blocklocations = new LinkedList<>();
-        Map<String, String> messageParts = new LinkedHashMap<>();
+        Map<String, Object> messageParts = new LinkedHashMap<>();
 
         if(!Vault.getEconomy().hasBankSupport()) {
             player.sendMessage(signShopConfig.getError("no_bank_support", messageParts));
@@ -443,13 +444,17 @@ public class signshopUtil {
                     return false;
                 else {
                     clicks.mClicksPerLocation.put(bClicked.getLocation(), ssPlayer.getPlayer());
-                    Map<String, String> messageParts = new LinkedHashMap<>();
+                    Map<String, Object> messageParts = new LinkedHashMap<>();
                     messageParts.put("!block", itemUtil.formatMaterialName(bClicked));
                     if(bClicked.getState() instanceof InventoryHolder) {
                         List<Block> containables = new LinkedList<>();
                         containables.add(bClicked);
                         ItemStack[] allStacks = itemUtil.getAllItemStacksForContainables(containables);
-                        messageParts.put("!items", (allStacks.length == 0 ? "nothing" : itemUtil.itemStackToString(allStacks)));
+                        if (allStacks.length == 0) {
+                            messageParts.put("!items", "nothing");
+                        } else {
+                            messageParts.put("!items", ItemMessagePart.fromItems(allStacks));
+                        }
                         ssPlayer.sendMessage(signShopConfig.getError("stored_location_containable", messageParts));
                     } else {
                         ssPlayer.sendMessage(signShopConfig.getError("stored_location", messageParts));
@@ -489,7 +494,7 @@ public class signshopUtil {
                 chestCounter++;
                 boolean exceeded = signShopConfig.ExceedsMaxChestsPerShop(chestCounter);
                 if(exceeded) {
-                    Map<String, String> parts = new LinkedHashMap<>();
+                    Map<String, Object> parts = new LinkedHashMap<>();
                     parts.put("!maxAmountOfChests", Integer.toString(signShopConfig.getMaxChestsPerShop()));
                     ssPlayer.sendMessage(signShopConfig.getError("exceeded_max_amount_of_chests_per_shop", parts));
                     return false;

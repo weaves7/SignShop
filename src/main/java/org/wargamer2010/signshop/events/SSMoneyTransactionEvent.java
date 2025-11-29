@@ -28,7 +28,7 @@ public class SSMoneyTransactionEvent extends SSEvent implements IOperationEvent 
     private SignShopArguments ssArgs = null;
 
     public SSMoneyTransactionEvent(SignShopPlayer pPlayer, Seller pShop, double pAmount, Block pSign, String pOperation, ItemStack[] pItems,
-            boolean leftClicking, SSMoneyEventType pType, Map<String, String> pMessageParts, SSMoneyRequestType pRequestType) {
+            boolean leftClicking, SSMoneyEventType pType, Map<String, Object> pMessageParts, SSMoneyRequestType pRequestType) {
         super(pMessageParts);
         ssPlayer = pPlayer;
         seShop = pShop;

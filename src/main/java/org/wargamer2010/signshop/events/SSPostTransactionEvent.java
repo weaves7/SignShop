@@ -22,7 +22,7 @@ public class SSPostTransactionEvent extends SSPreTransactionEvent {
                                 SignShopPlayer pOwner,
                                 Block pSign,
                                 String pOperation,
-                                Map<String, String> pMessageParts,
+                                Map<String, Object> pMessageParts,
                                 Seller pShop,
                                 Action pAction,
                                 boolean pRequirementsOK) {

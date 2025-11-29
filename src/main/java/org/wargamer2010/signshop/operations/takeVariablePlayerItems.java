@@ -5,6 +5,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.player.SignShopPlayer;
+import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.itemUtil;
 import org.wargamer2010.signshop.util.signshopUtil;
 
@@ -89,7 +90,7 @@ public class takeVariablePlayerItems implements SignShopOperation {
             return false;
         }
         ssArgs.getItems().set(isTotalItems);
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         return true;
     }
 
@@ -111,7 +112,7 @@ public class takeVariablePlayerItems implements SignShopOperation {
 
         SignShopPlayer ssPlayer = ssArgs.getPlayer().get();
 
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         HashMap<ItemStack[], Double> variableAmount = ssPlayer.getVirtualInventory().variableAmount(ssArgs.getItems().get());
         Double iCount = (Double)variableAmount.values().toArray()[0];
 
@@ -128,7 +129,7 @@ public class takeVariablePlayerItems implements SignShopOperation {
         }
 
         ssArgs.getItems().set(isActual);
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         if(iCount != 0.0d)
             ssArgs.getPrice().set(ssArgs.getPrice().get() * iCount * pricemod);
         else

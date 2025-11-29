@@ -1,5 +1,6 @@
 package org.wargamer2010.signshop.player;
 
+import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.Bukkit;
 import org.jetbrains.annotations.NotNull;
 import org.wargamer2010.signshop.SignShop;
@@ -38,6 +39,17 @@ public class MessageWorker implements Runnable {
     }
 
     public static void OfferMessage(String message, SignShopPlayer player) {
+        OfferMessage(message, null, player);
+    }
+
+    /**
+     * Offers a message with an optional rich component (for hover events).
+     *
+     * @param messageKey The plain text message used as deduplication key
+     * @param component The rich component to display (can be null for plain text)
+     * @param player The player to send the message to
+     */
+    public static void OfferMessage(String messageKey, BaseComponent component, SignShopPlayer player) {
         String playername = player.getName();
         long timenow = System.currentTimeMillis();
         HashMap<String, Message> mMessageMap = mPlayerMessageMap.get(playername);
@@ -47,34 +59,48 @@ public class MessageWorker implements Runnable {
             mMessageMap = new HashMap<>();
             mPlayerMessageMap.put(playername, mMessageMap);
         }
-        else if (mMessageMap.containsKey(message) && (timenow - mMessageMap.get(message).getLastSeen()) <= cooldown) {
+        else if (mMessageMap.containsKey(messageKey) && (timenow - mMessageMap.get(messageKey).getLastSeen()) <= cooldown) {
             // Check if message is the same and if less time than the cooldown has passed
             // If so, increment count and push the message to the queue
-            mMessageMap.get(message).incCount();
+            mMessageMap.get(messageKey).incCount();
             synchronized (MessageWorker.class) {
-                if (!messageQueue.contains(mMessageMap.get(message)))
-                    messageQueue.offer(mMessageMap.get(message));
+                if (!messageQueue.contains(mMessageMap.get(messageKey)))
+                    messageQueue.offer(mMessageMap.get(messageKey));
             }
             return;
         }
 
-        if (!mMessageMap.containsKey(message)) {
-            mMessageMap.put(message, new Message(message, player.GetIdentifier(), timenow));
+        if (!mMessageMap.containsKey(messageKey)) {
+            mMessageMap.put(messageKey, new Message(messageKey, component, player.GetIdentifier(), timenow));
         }
-        else if (mMessageMap.get(message).getCount() > 0) {
+        else if (mMessageMap.get(messageKey).getCount() > 0) {
             // We've been repeating the message and this is the last in the row, so we should count it
             // That way it's easier to read the message and just multiply the repeated_x_times with the numbers in the message
-            mMessageMap.get(message).incCount();
+            mMessageMap.get(messageKey).incCount();
         }
 
-        SendRepeatedMessage(mMessageMap.get(message));
+        SendRepeatedMessage(mMessageMap.get(messageKey));
     }
 
     private static void SendRepeatedMessage(Message message) {
-        Map<String, String> pars = new LinkedHashMap<>();
+        Map<String, Object> pars = new LinkedHashMap<>();
         pars.put("!times", Integer.toString(message.getCount()));
         String appender = (message.getCount() > 0 ? (" " + SignShop.getInstance().getSignShopConfig().getError("repeated_x_times", pars)) : "");
-        message.getPlayer().sendNonDelayedMessage(message.getMessage() + appender);
+
+        // Send component if available, otherwise send string
+        if (message.getComponent() != null) {
+            if (message.getCount() > 0) {
+                // Append repeat count to component
+                net.md_5.bungee.api.chat.TextComponent fullMessage = new net.md_5.bungee.api.chat.TextComponent(message.getComponent());
+                fullMessage.addExtra(appender);
+                message.getPlayer().sendNonDelayedMessage(fullMessage);
+            } else {
+                message.getPlayer().sendNonDelayedMessage(message.getComponent());
+            }
+        } else {
+            message.getPlayer().sendNonDelayedMessage(message.getMessage() + appender);
+        }
+
         message.clrCount();
         message.setLastSeen(System.currentTimeMillis());
     }
@@ -100,13 +126,19 @@ public class MessageWorker implements Runnable {
 
     private static class Message implements Delayed {
         private final String sMessage;
+        private final BaseComponent component; // Rich component with hover events (can be null)
         private final PlayerIdentifier playerIdentifier;
         private int iCount = 0;
         private long lLastSeen;
         private final int delay = (SignShop.getInstance().getSignShopConfig().getMessageCooldown() * 1000 + 1000); // Convert to millis and give it a second
 
         private Message(String pMessage, PlayerIdentifier playerIdentifier, long pTime) {
+            this(pMessage, null, playerIdentifier, pTime);
+        }
+
+        private Message(String pMessage, BaseComponent pComponent, PlayerIdentifier playerIdentifier, long pTime) {
             sMessage = pMessage;
+            component = pComponent;
             this.playerIdentifier = playerIdentifier;
             lLastSeen = pTime;
         }
@@ -129,6 +161,10 @@ public class MessageWorker implements Runnable {
 
         public String getMessage() {
             return sMessage;
+        }
+
+        public BaseComponent getComponent() {
+            return component;
         }
 
         public SignShopPlayer getPlayer() {

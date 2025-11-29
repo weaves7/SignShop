@@ -3,6 +3,7 @@ package org.wargamer2010.signshop.operations;
 import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.player.SignShopPlayer;
+import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.itemUtil;
 
 public class takePlayerItems implements SignShopOperation {
@@ -22,7 +23,7 @@ public class takePlayerItems implements SignShopOperation {
         }
         if(isTotalItems.length > 0)
             ssArgs.getItems().set(isTotalItems);
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         return true;
     }
 
@@ -42,7 +43,7 @@ public class takePlayerItems implements SignShopOperation {
         }
 
         SignShopPlayer player = ssArgs.getPlayer().get();
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         if(!player.getVirtualInventory().isStockOK(ssArgs.getItems().get(), true)) {
             ssArgs.sendFailedRequirementsMessage("player_doesnt_have_items");
             return false;

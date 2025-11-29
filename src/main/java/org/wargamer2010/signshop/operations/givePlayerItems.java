@@ -3,6 +3,7 @@ package org.wargamer2010.signshop.operations;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.SignShop;
+import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.itemUtil;
 
 public class givePlayerItems implements SignShopOperation {
@@ -22,7 +23,7 @@ public class givePlayerItems implements SignShopOperation {
         }
         if(isTotalItems.length > 0)
             ssArgs.getItems().set(isTotalItems);
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         return true;
     }
 
@@ -41,7 +42,7 @@ public class givePlayerItems implements SignShopOperation {
             return false;
         }
 
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         if(ssArgs.isOperationParameter("oneslot")) {
             boolean bEmptySlot = false;
             for(ItemStack stack : ssArgs.getPlayer().get().getPlayer().getInventory().getContents()) {
