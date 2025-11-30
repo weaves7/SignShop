@@ -7,6 +7,7 @@ import org.bukkit.block.sign.Side;
 import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.data.SignShopBooks;
 import org.wargamer2010.signshop.data.SignShopItemMeta;
+import org.wargamer2010.signshop.operations.SignShopArguments;
 import org.wargamer2010.signshop.player.PlayerCache;
 import org.wargamer2010.signshop.player.PlayerIdentifier;
 import org.wargamer2010.signshop.player.SignShopPlayer;
@@ -25,6 +26,10 @@ public class Seller {
     private final Map<String, String> miscProps = new HashMap<>();
     private final Map<String, String> volatileProperties = new LinkedHashMap<>();
     private Map<String, Object> serializedData = new HashMap<>();
+
+    // Cache for deserialized misc items (chest1, chest2, etc.) to avoid repeated deserialization
+    // Transient = not serialized to disk, rebuilt from miscProps as needed
+    private transient final Map<String, ItemStack[]> miscItemsCache = new HashMap<>();
 
     private SignShopPlayer owner;
     private final String world;
@@ -103,12 +108,55 @@ public class Seller {
 
     public void removeMisc(String key) {
         miscProps.remove(key);
+        miscItemsCache.remove(key);  // Invalidate cache for this key
         calculateSerialization();
     }
 
     public void addMisc(String key, String value) {
         miscProps.put(key, value);
+        miscItemsCache.remove(key);  // Invalidate cache for this key
         calculateSerialization();
+    }
+
+    public void setMiscSettings(Map<String, String> newMiscSettings) {
+        if (newMiscSettings != null) {
+            miscProps.putAll(newMiscSettings);
+            miscItemsCache.clear();  // Invalidate entire cache when bulk updating
+            calculateSerialization();
+        }
+    }
+
+    /**
+     * Gets deserialized items from misc settings, using cache to avoid repeated deserialization.
+     * @param key The misc key (e.g., "chest1", "chest2")
+     * @return Deserialized ItemStack array, or null if key doesn't exist or deserialization fails
+     */
+    public ItemStack[] getCachedMiscItems(String key) {
+        // Check cache first
+        if (miscItemsCache.containsKey(key)) {
+            return miscItemsCache.get(key);
+        }
+
+        // Not in cache - deserialize from miscProps
+        String serialized = miscProps.get(key);
+        if (serialized == null) {
+            return null;
+        }
+
+        // Deserialize (may contain multiple items separated by separator)
+        String[] serializedItems;
+        if (!serialized.contains(SignShopArguments.separator)) {
+            serializedItems = new String[]{serialized};
+        } else {
+            serializedItems = serialized.split(SignShopArguments.separator);
+        }
+
+        ItemStack[] items = itemUtil.convertStringtoItemStacks(Arrays.asList(serializedItems));
+
+        // Cache the result (even if null, to avoid repeated failed deserializations)
+        miscItemsCache.put(key, items);
+
+        return items;
     }
 
     public String getMisc(String key) {

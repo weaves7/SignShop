@@ -28,6 +28,8 @@ public class SignShopArguments implements IMessagePartContainer {
     public boolean bDoNotClearClickmap = false;
     public boolean bPriceModApplied = false;
     public boolean bRunCommandAsUser = false;
+    // Reference to seller for accessing cached deserialized items
+    private Seller seller = null;
     private final SignShopArgument<Double> fPrice = new SignShopArgument<>(this);
     private final SignShopArgument<List<Block>> containables = new SignShopArgument<>(this);
     private final SignShopArgument<List<Block>> activatables = new SignShopArgument<>(this);
@@ -69,6 +71,7 @@ public class SignShopArguments implements IMessagePartContainer {
     }
 
     public SignShopArguments(Seller seller, SignShopPlayer player, SignShopArgumentsType type) {
+        this.seller = seller;  // Store seller reference for cached item access
         if (seller.getSign().getState() instanceof Sign)
             fPrice.setRoot(economyUtil.parsePrice(((Sign) seller.getSign().getState()).getSide(Side.FRONT).getLine(3)));
 
@@ -211,6 +214,14 @@ public class SignShopArguments implements IMessagePartContainer {
 
     public void setArgumentType(SignShopArgumentsType argumentType) {
         this.argumentType = argumentType;
+    }
+
+    public Seller getSeller() {
+        return seller;
+    }
+
+    public void setSeller(Seller seller) {
+        this.seller = seller;
     }
 
     public SSMoneyEventType getMoneyEventType() {

@@ -362,6 +362,7 @@ public class SignShopPlayerListener implements Listener {
 
             if (seller.getRawMisc() != null)
                 ssArgs.miscSettings = seller.getRawMisc();
+            ssArgs.setSeller(seller);  // Set seller reference for cached item access
             boolean bRequirementsOK = true;
             boolean bReqOKSolid = true;
             boolean bRunOK = false;

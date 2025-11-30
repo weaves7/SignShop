@@ -99,16 +99,22 @@ public class Chest implements SignShopOperation {
             return incorrectPar(ssArgs);
 
         ssArgs.forceMessageKeys.put("!items", ("!chest" + iChestnumber));
-        String misc = ssArgs.miscSettings.get(("chest" + iChestnumber));
-        String[] sItemss;
-        if(!misc.contains(SignShopArguments.separator)) {
-            sItemss = new String[1];
-            sItemss[0] = misc;
-        } else
-            sItemss = misc.split(SignShopArguments.separator);
-        ItemStack[] isItemss;
 
-        isItemss = itemUtil.convertStringtoItemStacks(Arrays.asList(sItemss));
+        // Use cached deserialized items if seller reference is available (performance optimization)
+        ItemStack[] isItemss;
+        if (ssArgs.getSeller() != null) {
+            isItemss = ssArgs.getSeller().getCachedMiscItems("chest" + iChestnumber);
+        } else {
+            // Fallback to manual deserialization if no seller reference (shouldn't happen normally)
+            String misc = ssArgs.miscSettings.get(("chest" + iChestnumber));
+            String[] sItemss;
+            if(!misc.contains(SignShopArguments.separator)) {
+                sItemss = new String[1];
+                sItemss[0] = misc;
+            } else
+                sItemss = misc.split(SignShopArguments.separator);
+            isItemss = itemUtil.convertStringtoItemStacks(Arrays.asList(sItemss));
+        }
 
         // Phase 3B: Check for null items (incompatible items that failed to deserialize)
         if (itemUtil.hasNullItems(isItemss)) {
@@ -117,6 +123,9 @@ public class Chest implements SignShopOperation {
         }
 
         ssArgs.getItems().set(isItemss);
+        // Set message part so !chest1, !chest2, etc. placeholders get replaced in transaction messages
+        // Set directly (don't use forceMessageKeys) to avoid being overwritten by other operations
+        ssArgs.setMessagePart("!chest" + iChestnumber, ItemMessagePart.fromItems(isItemss));
 
         Block bHolder = checkChestAmount(ssArgs, iChestnumber);
         if(bHolder != null) {

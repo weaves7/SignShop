@@ -89,7 +89,7 @@ public class ChangeShopItems implements SignShopSpecialOp {
             return true;
         }
 
-        Storage.get().updateSeller(bClicked, seller.getContainables(), seller.getActivatables(), ssArgs.getItems().get());
+        Storage.get().updateSeller(bClicked, seller.getContainables(), seller.getActivatables(), ssArgs.getItems().get(), ssArgs.miscSettings);
 
         if (!ssArgs.bDoNotClearClickmap) {
             clicks.removePlayerFromClickmap(player);

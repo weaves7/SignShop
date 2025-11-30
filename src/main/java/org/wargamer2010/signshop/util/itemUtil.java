@@ -599,6 +599,7 @@ public class itemUtil {
                                                                 null, null, pSign, signshopUtil.getOperation(sLines[0]), null, Action.RIGHT_CLICK_BLOCK, SignShopArgumentsType.Check);
             if(pSeller.getRawMisc() != null)
                 ssArgs.miscSettings = pSeller.getRawMisc();
+            ssArgs.setSeller(pSeller);  // Set seller reference for cached item access
             Boolean reqOK = true;
             for(SignShopOperationListItem ssOperation : SignShopOperations) {
                 ssArgs.setOperationParameters(ssOperation.getParameters());

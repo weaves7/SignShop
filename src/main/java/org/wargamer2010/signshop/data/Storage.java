@@ -346,6 +346,14 @@ public class Storage implements Listener {
         seller.setItems(isItems);
     }
 
+    public void updateSeller(Block bSign, List<Block> containables, List<Block> activatables, ItemStack[] isItems, Map<String, String> miscSettings) {
+        Seller seller = Storage.sellers.get(bSign.getLocation());
+        seller.setActivatables(activatables);
+        seller.setContainables(containables);
+        seller.setItems(isItems);
+        seller.setMiscSettings(miscSettings);
+    }
+
     public Seller getSeller(Location lKey){
         if(Storage.sellers.containsKey(lKey))
             return Storage.sellers.get(lKey);

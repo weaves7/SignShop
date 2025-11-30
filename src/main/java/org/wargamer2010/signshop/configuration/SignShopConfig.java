@@ -747,13 +747,15 @@ public class SignShopConfig {
             return new TextComponent("");
 
         String workingMessage = ChatColor.translateAlternateColorCodes(getColorCode(), pMessage);
+        // Remove escape characters from template before processing
+        workingMessage = workingMessage.replace("\\", "");
 
         if (messageParts == null || messageParts.isEmpty()) {
             // No placeholders to replace, convert legacy colors and return
-            String cleaned = workingMessage.replace("\\", "");
-            return TextComponent.fromLegacy(cleaned);
+            return TextComponent.fromLegacy(workingMessage);
         }
 
+        // Build component by scanning message left-to-right, replacing placeholders as found
         // Use TreeMap with StringLengthComparator to process longest placeholders first
         // This prevents "!item" from matching when "!items" exists
         TreeMap<String, Object> sortedParts = new TreeMap<>(new StringLengthComparator());
@@ -761,57 +763,53 @@ public class SignShopConfig {
 
         ComponentBuilder builder = new ComponentBuilder("");
         boolean hasContent = false;
+        int currentPos = 0;
 
-        // Process placeholders from longest to shortest
-        for (Map.Entry<String, Object> entry : sortedParts.entrySet()) {
-            String placeholder = entry.getKey();
-            Object value = entry.getValue();
+        // Scan message left-to-right
+        while (currentPos < workingMessage.length()) {
+            // Find the next placeholder (check all placeholders, pick the earliest one)
+            int earliestIndex = -1;
+            String earliestPlaceholder = null;
+            Object earliestValue = null;
 
-            // Find all occurrences of this placeholder and replace them
-            while (workingMessage.contains(placeholder)) {
-                int index = workingMessage.indexOf(placeholder);
-
-                // Add text before placeholder (if any)
-                if (index > 0) {
-                    String beforeText = workingMessage.substring(0, index);
-                    // Use fromLegacy to preserve color codes
-                    builder.append(TextComponent.fromLegacy(beforeText), ComponentBuilder.FormatRetention.NONE);
-                    hasContent = true;
+            for (Map.Entry<String, Object> entry : sortedParts.entrySet()) {
+                int index = workingMessage.indexOf(entry.getKey(), currentPos);
+                if (index != -1 && (earliestIndex == -1 || index < earliestIndex)) {
+                    earliestIndex = index;
+                    earliestPlaceholder = entry.getKey();
+                    earliestValue = entry.getValue();
                 }
-
-                // Add placeholder value (either as text or component with hover)
-                if (value instanceof ItemMessagePart) {
-                    // Add item component with hover tooltip
-                    BaseComponent itemComponent = itemUtil.itemStackToComponent(((ItemMessagePart) value).getItems());
-                    builder.append(itemComponent, ComponentBuilder.FormatRetention.NONE);
-                    hasContent = true;
-                } else if (value instanceof String) {
-                    // Add plain text, preserving color codes
-                    builder.append(TextComponent.fromLegacy((String) value), ComponentBuilder.FormatRetention.NONE);
-                    hasContent = true;
-                }
-
-                // Update working message to continue processing
-                workingMessage = workingMessage.substring(index + placeholder.length());
             }
+
+            if (earliestIndex == -1) {
+                // No more placeholders, add remaining text
+                builder.append(TextComponent.fromLegacy(workingMessage.substring(currentPos)), ComponentBuilder.FormatRetention.NONE);
+                hasContent = true;
+                break;
+            }
+
+            // Add text before placeholder
+            if (earliestIndex > currentPos) {
+                builder.append(TextComponent.fromLegacy(workingMessage.substring(currentPos, earliestIndex)), ComponentBuilder.FormatRetention.NONE);
+                hasContent = true;
+            }
+
+            // Add placeholder value
+            if (earliestValue instanceof ItemMessagePart) {
+                BaseComponent itemComponent = itemUtil.itemStackToComponent(((ItemMessagePart) earliestValue).getItems());
+                builder.append(itemComponent, ComponentBuilder.FormatRetention.NONE);
+                hasContent = true;
+            } else if (earliestValue instanceof String) {
+                builder.append(TextComponent.fromLegacy((String) earliestValue), ComponentBuilder.FormatRetention.NONE);
+                hasContent = true;
+            }
+
+            // Move past this placeholder
+            currentPos = earliestIndex + earliestPlaceholder.length();
         }
 
-        // Add any remaining text after all placeholders
-        if (!workingMessage.isEmpty()) {
-            // Use fromLegacy to preserve color codes
-            builder.append(TextComponent.fromLegacy(workingMessage), ComponentBuilder.FormatRetention.NONE);
-            hasContent = true;
-        }
-
-        // Remove escape characters
+        // Build final component
         BaseComponent[] components = hasContent ? builder.create() : new BaseComponent[0];
-        for (BaseComponent component : components) {
-            if (component instanceof TextComponent) {
-                TextComponent tc = (TextComponent) component;
-                tc.setText(tc.getText().replace("\\", ""));
-            }
-        }
-
         return components.length > 0 ? new TextComponent(components) : new TextComponent("");
     }
 
