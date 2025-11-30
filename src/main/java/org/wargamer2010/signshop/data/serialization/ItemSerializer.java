@@ -213,11 +213,18 @@ public class ItemSerializer {
         }
 
         // Step 4: Use Bukkit's deserialize() to create ItemStack
-        ItemStack item = ItemStack.deserialize(itemData);
-
-        debugLog("Deserialized (modern): " + (item != null ? item.getType() : "null"));
-
-        return item;
+        try {
+            ItemStack item = ItemStack.deserialize(itemData);
+            debugLog("Deserialized (modern): " + (item != null ? item.getType() : "null"));
+            return item;
+        } catch (Exception e) {
+            // ItemStack deserialization failed (e.g., corrupt player heads with empty names)
+            // This can happen with incompatible items that passed YAML parsing but fail during
+            // Bukkit's internal deserialization (NullPointerException in CraftMetaSkull, etc.)
+            SignShop.log("ItemStack deserialization failed (incompatible item data): " + e.getMessage(), Level.WARNING);
+            debugLog("ItemStack.deserialize() threw exception, returning null");
+            return null;
+        }
     }
 
     // ========================================
@@ -261,6 +268,13 @@ public class ItemSerializer {
      * Converts YAML string back to Map using Bukkit's YamlConfiguration.
      */
     private static Map<String, Object> yamlToMap(String yaml) {
+        // Pre-validate: Detect corrupt player heads with empty names (causes NPE in Spigot 1.21)
+        // This prevents Bukkit from logging scary stacktraces for known corrupt data
+        if (yaml.contains("meta-type: SKULL") && yaml.contains("name: ''")) {
+            // Corrupt player head with empty name - will cause NPE in CraftMetaSkull deserialization
+            throw new RuntimeException("Corrupt player head detected (empty name) - cannot deserialize");
+        }
+
         YamlConfiguration config = new YamlConfiguration();
 
         try {

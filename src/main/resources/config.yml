@@ -99,9 +99,14 @@ ShowMaterialInCustomNames: true
 
 # Show item details (lore, enchantments, book info) in chat messages (Default = true)
 # When true: Chat shows "1 Stone <Thorns V, Arrow Damage III> <Name weaves7, ...>" (current behavior)
-# When false: Chat shows only "1 Stone" (details still visible in hover tooltip)
-# Note: Hover tooltips always show full item details regardless of this setting
+# When false: Chat shows only "1 Stone" (details still visible in hover tooltip if enabled)
 ShowItemDetailsInChat: true
+
+# Show hover tooltips when hovering over item names in chat (Default = true)
+# When true: Hovering over items shows a tooltip with item details
+# When false: No hover tooltips are shown
+# Note: The level of detail shown in hover tooltips depends on your server implementation
+ShowItemHovers: true
 
 # Used to allow groups of users to use shops for different amounts of money
 # A multiplier of "1.0" means the amount is the same as it is on the sign
