@@ -87,6 +87,16 @@ public class SSCreatedEvent extends SSEvent {
         messageParts.put(part, value);
     }
 
+    /**
+     * Overloaded method for binary compatibility with external plugins.
+     *
+     * @param part The message part key
+     * @param value The string value
+     */
+    public void setMessagePart(String part, String value) {
+        setMessagePart(part, (Object) value);
+    }
+
     public Map<String, String> getMiscSettings() {
         return miscSettings;
     }

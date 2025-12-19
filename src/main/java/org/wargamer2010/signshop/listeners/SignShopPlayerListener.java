@@ -187,15 +187,12 @@ public class SignShopPlayerListener implements Listener {
                 sLines = ((Sign) bClicked.getState()).getSide(Side.FRONT).getLines();
                 sOperation = signshopUtil.getOperation(sLines[0]);
                 SignShopPlayer ssPlayer = PlayerCache.getPlayer(player);
-                if (SignShop.getInstance().getSignShopConfig().getBlocks(sOperation).isEmpty()) {
+
+                // Get compiled operations from cache (faster than getBlocks + getSignShopOps)
+                List<SignShopOperationListItem> SignShopOperations = SignShop.getInstance().getSignShopConfig().getCompiledOperations(sOperation);
+                if (SignShopOperations == null) {
                     if (!runSpecialOperations(event) && !signshopUtil.registerClickedMaterial(event))
                         ssPlayer.sendMessage(SignShop.getInstance().getSignShopConfig().getError("invalid_operation", null));
-                    return;
-                }
-                List<String> operation = SignShop.getInstance().getSignShopConfig().getBlocks(sOperation);
-                List<SignShopOperationListItem> SignShopOperations = signshopUtil.getSignShopOps(operation);
-                if (SignShopOperations == null) {
-                    ssPlayer.sendMessage(SignShop.getInstance().getSignShopConfig().getError("invalid_operation", null));
                     return;
                 }
 
@@ -225,7 +222,6 @@ public class SignShopPlayerListener implements Listener {
 
                 SSCreatedEvent createdevent = SSEventFactory.generateCreatedEvent(ssArgs);
                 SignShop.scheduleEvent(createdevent);
-                //TODo Either write the back of the sign in ShopUpdater or create a Highest priority listener to cancel if not kosher
                 if (createdevent.isCancelled()) {
                     itemUtil.setSignStatus(bClicked, ChatColor.BLACK);
                     signshopUtil.fixCreativeModeSignRendering(event.getClickedBlock(), event.getPlayer());
@@ -336,14 +332,8 @@ public class SignShopPlayerListener implements Listener {
             sLines = ((Sign) bClicked.getState()).getSide(Side.FRONT).getLines();
             sOperation = signshopUtil.getOperation(sLines[0]);
 
-            // Verify the operation
-            if (SignShop.getInstance().getSignShopConfig().getBlocks(sOperation).isEmpty()) {
-                return;
-            }
-
-            List<String> operation = SignShop.getInstance().getSignShopConfig().getBlocks(sOperation);
-
-            List<SignShopOperationListItem> SignShopOperations = signshopUtil.getSignShopOps(operation);
+            // Get compiled operations from cache (faster than getBlocks + getSignShopOps)
+            List<SignShopOperationListItem> SignShopOperations = SignShop.getInstance().getSignShopConfig().getCompiledOperations(sOperation);
             SignShopPlayer ssPlayer = PlayerCache.getPlayer(player);
             if (SignShopOperations == null) {
                 ssPlayer.sendMessage(SignShop.getInstance().getSignShopConfig().getError("invalid_operation", null));

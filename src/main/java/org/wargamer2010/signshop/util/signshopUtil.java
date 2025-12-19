@@ -127,12 +127,22 @@ public class signshopUtil {
             Enchantment enchantment;
             int enchantmentLevel;
             String[] enchantmentPair = singleEnchantmentString.split("\\|");
+
+            // Validate format: must have both enchantment name and level
+            if (enchantmentPair.length < 2) {
+                continue; // Skip malformed enchantment data
+            }
+
             enchantment = Registry.ENCHANTMENT.get(NamespacedKey.minecraft(enchantmentPair[0].toLowerCase()));
+            if (enchantment == null) {
+                continue; // Skip invalid enchantment
+            }
+
             try {
                 enchantmentLevel = Integer.parseInt(enchantmentPair[1]);
                 enchantmentsMap.put(enchantment, enchantmentLevel);
             } catch (NumberFormatException ignored) {
-
+                // Skip if level is not a valid number
             }
         }
         return enchantmentsMap;

@@ -50,6 +50,16 @@ public abstract class SSEvent extends Event implements Cancellable {
         messageParts.put(part, value);
     }
 
+    /**
+     * Overloaded method for binary compatibility with external plugins.
+     *
+     * @param part The message part key
+     * @param value The string value
+     */
+    public void setMessagePart(String part, String value) {
+        setMessagePart(part, (Object) value);
+    }
+
     @NotNull
     @Override
     public abstract HandlerList getHandlers();

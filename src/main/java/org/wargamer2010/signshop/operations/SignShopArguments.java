@@ -264,6 +264,17 @@ public class SignShopArguments implements IMessagePartContainer {
         messageParts.put(name, value);
     }
 
+    /**
+     * Overloaded method for binary compatibility with external plugins.
+     * Plugins compiled against older versions expect this signature.
+     *
+     * @param name The message part key
+     * @param value The string value
+     */
+    public void setMessagePart(String name, String value) {
+        setMessagePart(name, (Object) value);
+    }
+
     public boolean hasMessagePart(String name) {
         return messageParts.containsKey(name);
     }

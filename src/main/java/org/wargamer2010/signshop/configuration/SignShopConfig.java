@@ -44,6 +44,7 @@ public class SignShopConfig {
     private Map<String, Integer> ShopLimits;
     private List<LinkableMaterial> LinkableMaterials;
     private Map<String, List<String>> Operations = new HashMap<>();
+    private Map<String, List<SignShopOperationListItem>> compiledOperations = new HashMap<>();
     private SignShop instance = null;
     //Configurables
     private FileConfiguration config;
@@ -421,6 +422,24 @@ public class SignShopConfig {
                 }
             }
         }
+
+        // Build compiled operations cache for performance
+        buildCompiledOperationsCache();
+    }
+
+    /**
+     * Builds a cache of compiled operation lists for performance optimization.
+     * This eliminates the need to convert operation strings to SignShopOperationListItem
+     * objects on every transaction.
+     */
+    private void buildCompiledOperationsCache() {
+        compiledOperations.clear();
+        for (Map.Entry<String, List<String>> entry : Operations.entrySet()) {
+            List<SignShopOperationListItem> compiled = signshopUtil.getSignShopOps(entry.getValue());
+            if (compiled != null) {
+                compiledOperations.put(entry.getKey(), compiled);
+            }
+        }
     }
 
     private String opListToString(List<String> operations) {
@@ -611,6 +630,22 @@ public class SignShopConfig {
             return Operations.get(op);
         else
             return new LinkedList<>();
+    }
+
+    /**
+     * Gets the compiled operation list for a shop type from cache.
+     * This is significantly faster than calling getBlocks() + getSignShopOps()
+     * because the operations are pre-compiled at config load time.
+     *
+     * @param pOp The operation name or alias (e.g., "Buy", "Sell")
+     * @return The compiled list of operations, or null if not found
+     */
+    public List<SignShopOperationListItem> getCompiledOperations(String pOp) {
+        String op = pOp;
+        if (OperationAliases.containsKey(op))
+            op = OperationAliases.get(op);
+
+        return compiledOperations.get(op);
     }
 
     public Collection<String> getOperations() {
