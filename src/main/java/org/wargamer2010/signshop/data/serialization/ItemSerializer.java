@@ -215,6 +215,19 @@ public class ItemSerializer {
         // Step 4: Use Bukkit's deserialize() to create ItemStack
         try {
             ItemStack item = ItemStack.deserialize(itemData);
+
+            // Normalize data version: Round-trip through serialize/deserialize to upgrade
+            // items from old Minecraft versions (e.g., v4556 from 1.21.10) to current version
+            // (e.g., v4671 in 1.21.11). This ensures items from different versions have matching
+            // hashCodes for HashMap lookups in stock checking.
+            // Without this, items stored before a Minecraft update won't match player inventory items.
+            try {
+                item = ItemStack.deserialize(item.serialize());
+            } catch (Exception normalizeEx) {
+                // If normalization fails, use the original item
+                debugLog("Data version normalization failed, using original: " + normalizeEx.getMessage());
+            }
+
             debugLog("Deserialized (modern): " + (item != null ? item.getType() : "null"));
             return item;
         } catch (Exception e) {
@@ -243,6 +256,16 @@ public class ItemSerializer {
         // Apply book fix only for legacy books
         if (item != null && item.getType() == Material.WRITTEN_BOOK) {
             itemUtil.fixBookLegacy(item);
+        }
+
+        // Normalize data version (same as modern format) to ensure cross-version compatibility
+        if (item != null) {
+            try {
+                item = ItemStack.deserialize(item.serialize());
+            } catch (Exception normalizeEx) {
+                // If normalization fails, use the original item
+                debugLog("Legacy data version normalization failed, using original: " + normalizeEx.getMessage());
+            }
         }
 
         debugLog("Deserialized (legacy): " + (item != null ? item.getType() : "null"));
