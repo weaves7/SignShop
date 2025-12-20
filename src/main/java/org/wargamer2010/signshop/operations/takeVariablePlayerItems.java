@@ -135,6 +135,13 @@ public class takeVariablePlayerItems implements SignShopOperation {
         else
             ssArgs.getPrice().set(ssArgs.getPrice().get() * pricemod);
 
+        // Cache calculated items and final price in messageParts (transient, survives reset())
+        // No serialization needed - messageParts stores Objects directly
+        if(iCount != 0.0d && isActual != null && isActual.length > 0) {
+            ssArgs.setMessagePart("_takeVarItems_cached", isActual);
+            ssArgs.setMessagePart("_takeVarItems_finalPrice", ssArgs.getPrice().get());
+        }
+
         if(iCount == 0.0d) {
             ssArgs.sendFailedRequirementsMessage("player_doesnt_have_items");
             return false;
@@ -148,6 +155,30 @@ public class takeVariablePlayerItems implements SignShopOperation {
      */
     @Override
     public Boolean runOperation(SignShopArguments ssArgs) {
+        // Use cached calculations if available (avoids duplicate work after reset)
+        if(ssArgs.hasMessagePart("_takeVarItems_cached")) {
+            ItemStack[] cachedItems = (ItemStack[]) ssArgs.getRawMessageParts().get("_takeVarItems_cached");
+            Double cachedPrice = (Double) ssArgs.getRawMessageParts().get("_takeVarItems_finalPrice");
+
+            if(cachedItems != null && cachedItems.length > 0 && cachedPrice != null) {
+                ssArgs.getItems().set(cachedItems);
+                ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(cachedItems));
+
+                // Restore the final calculated price (reset() cleared it back to root)
+                ssArgs.getPrice().set(cachedPrice);
+
+                // Execute transfer
+                boolean transactedAll = ssArgs.getPlayer().get()
+                    .takePlayerItems(ssArgs.getItems().get()).isEmpty();
+                if(!transactedAll)
+                    ssArgs.getPlayer().get().sendMessage(
+                        SignShop.getInstance().getSignShopConfig().getError(
+                            "could_not_complete_operation", null));
+                return transactedAll;
+            }
+        }
+
+        // FALLBACK: Cache miss - recalculate (safety net)
         if(!checkRequirements(ssArgs, true))
             return false;
         boolean transactedAll = ssArgs.getPlayer().get().takePlayerItems(ssArgs.getItems().get()).isEmpty();
