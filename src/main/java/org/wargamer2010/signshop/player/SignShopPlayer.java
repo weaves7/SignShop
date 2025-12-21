@@ -109,7 +109,8 @@ public class SignShopPlayer {
             return;
 
         // Convert component to plain text for cooldown deduplication
-        String plainText = component.toLegacyText();
+        // Use toPlainText() to strip ALL formatting including color codes
+        String plainText = component.toPlainText();
         if (plainText == null || plainText.trim().isEmpty())
             return;
 
@@ -129,6 +130,11 @@ public class SignShopPlayer {
      */
     public void sendNonDelayedMessage(BaseComponent component) {
         if (component == null || getPlayer() == null || ignoreMessages)
+            return;
+
+        // Check for empty content - toPlainText() strips ALL formatting including color codes
+        String plainText = component.toPlainText();
+        if (plainText == null || plainText.trim().isEmpty())
             return;
 
         // Add chat prefix
