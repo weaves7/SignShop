@@ -6,6 +6,9 @@ import com.bekvon.bukkit.residence.protection.ClaimedResidence;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
+/**
+ * Residence integration hook that checks container permissions in claimed residences.
+ */
 public class ResidenceHook implements Hook {
 
     @Override

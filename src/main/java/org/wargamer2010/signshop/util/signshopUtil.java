@@ -32,6 +32,40 @@ import org.wargamer2010.signshop.util.ItemMessagePart;
 
 import java.util.*;
 
+/**
+ * General utility methods for SignShop operations and shop management.
+ *
+ * <p>Provides static utilities for sign parsing, location handling, block linking,
+ * operation execution, and player interaction. Works closely with {@link itemUtil}
+ * and {@link SignShopConfig}.</p>
+ *
+ * <h2>Key Functionality:</h2>
+ * <ul>
+ *   <li><b>Sign Parsing:</b> {@link #getOperation(Sign, boolean)} extracts shop type from sign text</li>
+ *   <li><b>Location Handling:</b> {@link #convertLocationToString(Location)} and
+ *       {@link #convertStringToLocation(World, String)} for persistence</li>
+ *   <li><b>Block Linking:</b> {@link #getSignshopBlocksFromList(SignShopPlayer, List, List, List)}
+ *       separates containables (chests) from activatables (levers)</li>
+ *   <li><b>Click Registration:</b> {@link #registerClickedMaterial(PlayerInteractEvent)} tracks
+ *       blocks selected with redstone dust for shop creation</li>
+ *   <li><b>Price Extraction:</b> {@link #parsePrice(String)} parses prices from sign text</li>
+ * </ul>
+ *
+ * <h2>Shop Creation Flow:</h2>
+ * <pre>
+ * 1. Player left-clicks blocks with redstone → registerClickedMaterial()
+ * 2. Player writes sign → getOperation() extracts shop type
+ * 3. Player left-clicks sign with redstone → getSignshopBlocksFromList() links blocks
+ * 4. Shop created and saved
+ * </pre>
+ *
+ * <h2>Thread Safety:</h2>
+ * <p>All methods are static and interact with Bukkit API. Must be called from main thread.</p>
+ *
+ * @see itemUtil
+ * @see SignShopConfig
+ * @see clicks
+ */
 public class signshopUtil {
     private static SignShopConfig signShopConfig;
 
@@ -42,6 +76,13 @@ public class signshopUtil {
         signShopConfig = config;
     }
 
+    /**
+     * Extracts the shop type from a sign's first line (e.g., "[Buy]" → "buy").
+     *
+     * @param sign The sign block to read
+     * @param lowercase If true, returns lowercase; otherwise preserves case
+     * @return Shop type without brackets, or empty string if invalid
+     */
     public static String getOperation(Sign sign, boolean lowercase) {
         if (sign == null)
             return "";
@@ -54,6 +95,12 @@ public class signshopUtil {
         return (lowercase ? temp.toLowerCase() : temp);
     }
 
+    /**
+     * Extracts the shop type from a sign line string.
+     *
+     * @param sSignOperation Sign line text (e.g., "[Buy]")
+     * @return Shop type in lowercase without brackets, or empty string if invalid
+     */
     public static String getOperation(String sSignOperation) {
         if(sSignOperation.length() < 4){
             return "";
@@ -67,6 +114,12 @@ public class signshopUtil {
         Bukkit.getServer().getPluginManager().callEvent(event);
     }
 
+    /**
+     * Parses operation parameters from config operation strings like "Chest{1}" or "cooldown{60,minutes}".
+     *
+     * @param sOperation Operation string with optional {parameters}
+     * @return List where first element is operation name, rest are comma-separated parameters
+     */
     public static List<String> getParameters(String sOperation) {
         List<String> parts = new LinkedList<>();
         if(sOperation.contains("{") && sOperation.contains("}")) {
@@ -99,6 +152,12 @@ public class signshopUtil {
         return ((moneyevent.isCancelled()) || !moneyevent.isHandled());
     }
 
+    /**
+     * Converts a list of operation strings from config into executable SignShopOperation instances.
+     *
+     * @param operation List of operation strings (e.g., ["takePlayerMoney", "giveShopItems"])
+     * @return List of operation items with their parameters, or null if any operation is invalid
+     */
     public static List<SignShopOperationListItem> getSignShopOps(List<String> operation) {
         List<SignShopOperationListItem> SignShopOperations = new LinkedList<>();
         for(String sSignShopOp : operation) {
@@ -159,10 +218,23 @@ public class signshopUtil {
         return sEnchantments.toString();
     }
 
+    /**
+     * Converts a Location to a string for persistence in sellers.yml.
+     *
+     * @param loc Location to convert
+     * @return String in format "x/y/z/worldname"
+     */
     public static String convertLocationToString(Location loc) {
         return (loc.getBlockX() + "/" + loc.getBlockY() + "/" + loc.getBlockZ() + "/" + loc.getWorld().getName());
     }
 
+    /**
+     * Converts a location string back to a Location object.
+     *
+     * @param sLoc Location string in format "x/y/z" or "x/y/z/worldname"
+     * @param pWorld Default world to use if not specified in string
+     * @return Location object, or null if parsing fails
+     */
     public static Location convertStringToLocation(String sLoc, World pWorld) {
         String[] sCoords = sLoc.split("/");
         if(sCoords.length < 3)
@@ -430,6 +502,13 @@ public class signshopUtil {
             return false;
     }
 
+    /**
+     * Registers a block click for shop creation when player uses the link material.
+     * Adds the block to the click map for later association with a shop sign.
+     *
+     * @param event The player interact event
+     * @return true if the block was a linkable material and was registered
+     */
     public static Boolean registerClickedMaterial(PlayerInteractEvent event) {
         return registerClickedMaterial(event, event.getPlayer(), event.getClickedBlock());
     }
@@ -490,6 +569,16 @@ public class signshopUtil {
         return (fPrice * fPricemod);
     }
 
+    /**
+     * Separates player's clicked blocks into containables (chests) and activatables (levers).
+     * Called during shop creation to build the shop's block associations.
+     *
+     * @param ssPlayer The player creating the shop
+     * @param containables Output list for container blocks (chests, barrels, etc.)
+     * @param activatables Output list for activatable blocks (levers, doors, etc.)
+     * @param bClicked The sign block being clicked (excluded from lists)
+     * @return true if successful, false if max chests exceeded or multi-world not allowed
+     */
     public static boolean getSignshopBlocksFromList(SignShopPlayer ssPlayer, List<Block> containables, List<Block> activatables, Block bClicked) {
         boolean multiWorld = false;
         LinkedHashSet<Location> lClicked = getKeysByValue(clicks.mClicksPerLocation, ssPlayer.getPlayer());
@@ -541,6 +630,13 @@ public class signshopUtil {
         return sellers;
     }
 
+    /**
+     * Finds all shops that would be affected if a block is destroyed.
+     * Checks if block is a shop sign, share sign, restrict sign, or linked container.
+     *
+     * @param block The block being destroyed
+     * @return Map of affected sellers to the type of relationship (sign, misc, attachable)
+     */
     public static Map<Seller, SSDestroyedEventType> getRelatedShopsByBlock(Block block) {
         Map<Seller, SSDestroyedEventType> affectedSellers = new LinkedHashMap<>();
 
@@ -568,6 +664,14 @@ public class signshopUtil {
         return keys;
     }
 
+    /**
+     * Checks if two blocks are within the maximum allowed distance for shop linking.
+     *
+     * @param a First block
+     * @param b Second block
+     * @param maxdistance Maximum distance in blocks (0 or negative = unlimited)
+     * @return true if blocks are within allowed distance
+     */
     public static Boolean checkDistance(Block a, Block b, int maxdistance) {
         if (maxdistance <= 0) {
             return true;
@@ -614,6 +718,13 @@ public class signshopUtil {
         return (doublesAsInts(locA.getX(), locB.getX()) && doublesAsInts(locA.getY(), locB.getY()) && doublesAsInts(locA.getZ(), locB.getZ()));
     }
 
+    /**
+     * Calculates a price modifier based on average item durability.
+     * Used for repair shops to adjust price based on damage level.
+     *
+     * @param stacks Items to calculate durability for
+     * @return Modifier from 0.0 (fully damaged) to 1.0 (pristine), or 1.0 if empty
+     */
     public static double calculateDurabilityModifier(ItemStack[] stacks) {
         if(stacks.length == 0)
             return 1.0f;

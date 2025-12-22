@@ -29,6 +29,49 @@ import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 
+/**
+ * Data persistence layer for all SignShop shops (Seller objects).
+ * <p>
+ * This class manages loading, saving, and accessing shop data from the sellers.yml file.
+ * It uses a singleton pattern and must be initialized via {@link #init(File)} before use.
+ * Access the singleton instance via {@link #get()}.
+ * </p>
+ *
+ * <h2>Key Features:</h2>
+ * <ul>
+ *   <li><b>Singleton Pattern:</b> Single instance manages all shop data in memory</li>
+ *   <li><b>sellers.yml Format:</b> YAML file storing all shop configurations with sections:
+ *     <ul>
+ *       <li>sellers - Active shops successfully loaded</li>
+ *       <li>deferred_sellers - Shops waiting for their world to load</li>
+ *       <li>invalid_sellers - Shops that failed validation (for debugging)</li>
+ *       <li>DataVersion - Format version for migration support</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>Deferred Loading:</b> Shops in unloaded worlds are automatically loaded when the world loads via {@link WorldLoadEvent}</li>
+ *   <li><b>Async File Saving:</b> Uses {@link FileSaveWorker} to save sellers.yml asynchronously, preventing main thread blocking</li>
+ *   <li><b>Validation:</b> On startup, validates all shops (sign exists, world loaded, etc.) and removes invalid ones with backups</li>
+ *   <li><b>Thread Safety:</b> Shop data (sellers map) is accessed on main thread. File I/O is async via FileSaveWorker.</li>
+ * </ul>
+ *
+ * <h2>Deferred Loading System:</h2>
+ * <p>
+ * When a shop's world is not loaded at startup (e.g., dynamic dungeon worlds, multiworld plugins),
+ * the shop is stored in {@code deferredSellers} and automatically loaded when a {@link WorldLoadEvent}
+ * occurs for that world. This prevents shop loss for worlds that load after the plugin.
+ * </p>
+ *
+ * <h2>Threading Considerations:</h2>
+ * <ul>
+ *   <li>All shop data access (add, remove, get) happens on the main thread</li>
+ *   <li>{@link #Save()} serializes shop data on main thread, then queues async file write</li>
+ *   <li>{@link FileSaveWorker} runs on async thread and handles actual disk I/O</li>
+ * </ul>
+ *
+ * @see Seller
+ * @see FileSaveWorker
+ * @see org.wargamer2010.signshop.util.DataConverter
+ */
 public class Storage implements Listener {
     private final File ymlfile;
     private final LinkedBlockingQueue<FileConfiguration> saveQueue = new LinkedBlockingQueue<>();

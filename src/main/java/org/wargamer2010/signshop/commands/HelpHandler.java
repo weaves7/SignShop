@@ -8,6 +8,10 @@ import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.*;
 
+/**
+ * Command handler for /signshop help.
+ * Displays help information, available commands, and sign type documentation to players.
+ */
 public class HelpHandler implements ICommandHandler {
     private static final ICommandHandler instance = new HelpHandler();
 

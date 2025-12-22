@@ -73,6 +73,23 @@ public class DataConverter {
     static File timingFile;
     static File timingFileBackup;
 
+    /**
+     * Initializes and executes the data conversion process.
+     *
+     * <p><b>Process Flow:</b></p>
+     * <ol>
+     *   <li>Loads sellers.yml configuration</li>
+     *   <li>Compares DataVersion against current version</li>
+     *   <li>If outdated → Creates backup, then runs {@link #convertData(FileConfiguration)}
+     *       and {@link #convertTiming()}</li>
+     *   <li>If current → Runs {@link #recheckLegacyShops(FileConfiguration)} for auto-migration</li>
+     * </ol>
+     *
+     * <p><b>Backup Strategy:</b> Creates timestamped backup before ANY modification.</p>
+     *
+     * @see #convertData(FileConfiguration)
+     * @see #recheckLegacyShops(FileConfiguration)
+     */
     public static void init() {
         File dataFolder = SignShop.getInstance().getDataFolder();
         sellersFile = new File(dataFolder, "sellers.yml");
@@ -96,6 +113,12 @@ public class DataConverter {
         }
     }
 
+    /**
+     * Converts timing.yml data from old plugin name references.
+     *
+     * <p>Renames "sshotel" expirable keys to "signshophotel" for consistency
+     * with modern plugin naming. Creates backup before modifications.</p>
+     */
     private static void convertTiming() {
         File dataFolder = SignShop.getInstance().getDataFolder();
         timingFile = new File(dataFolder, "timing.yml");
@@ -693,6 +716,17 @@ public class DataConverter {
         return updated;
     }
 
+    /**
+     * Converts very old item format (pre-DataVersion 3) to ItemStack array.
+     *
+     * <p><b>Old Format:</b> {@code [amount]~[material]~[durability]~[data]~[enchants]~[bookID]~[metaID]~[base64]}</p>
+     *
+     * <p>If Base64 NBT data exists (property 7+), deserializes from that for highest fidelity.
+     * Otherwise, reconstructs from individual properties using deprecated APIs.</p>
+     *
+     * @param itemStringList List of old format item strings
+     * @return Array of converted ItemStacks, nulls removed
+     */
     public static ItemStack[] convertOldStringsToItemStacks(List<String> itemStringList) {
         IItemTags itemTags = BookFactory.getItemTags();
         ItemStack[] itemStacks = new ItemStack[itemStringList.size()];
@@ -775,6 +809,16 @@ public class DataConverter {
         return itemStacks;
     }
 
+    /**
+     * Converts ItemStack array to old format strings.
+     *
+     * <p><b>Note:</b> This method is preserved for potential emergency rollback only.
+     * It is NOT used in normal operation.</p>
+     *
+     * @param itemStackArray Array of ItemStacks to convert
+     * @return Array of old format strings (2x length of input for redundancy)
+     * @deprecated Only preserved for emergency rollback, not actively used
+     */
     //Probably won't need this but saving it anyway.
     public static String[] convertItemStacksToOldString(ItemStack[] itemStackArray) {
         List<String> itemStringList = new ArrayList<>();

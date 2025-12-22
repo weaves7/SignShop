@@ -10,6 +10,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 
+/**
+ * SQLite database wrapper for SignShop persistent data.
+ */
 public class SSDatabase {
     private static final String downloadURL = "https://cloud.github.com/downloads/wargamer/SignShop/";
     private static Driver driver = null;

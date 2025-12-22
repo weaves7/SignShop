@@ -8,6 +8,9 @@ import org.wargamer2010.signshop.util.itemUtil;
 
 import java.util.HashMap;
 
+/**
+ * Shop operation that adds items to shop chests from transactions.
+ */
 public class giveShopItems implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

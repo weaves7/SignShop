@@ -6,6 +6,9 @@ import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.itemUtil;
 
+/**
+ * Shop operation that transfers items from shop chests to player inventory.
+ */
 public class givePlayerItems implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

@@ -9,6 +9,9 @@ import org.wargamer2010.signshop.player.SignShopPlayer;
 
 import java.util.Objects;
 
+/**
+ * Event fired when a SignShop is destroyed (sign broken, explosion, etc.).
+ */
 public class SSDestroyedEvent extends SSEvent {
     private static final HandlerList handlers = new HandlerList();
 

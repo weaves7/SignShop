@@ -14,6 +14,9 @@ import org.wargamer2010.signshop.money.MoneyModifierManager;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 import org.wargamer2010.signshop.util.economyUtil;
 
+/**
+ * Shop operation that withdraws money from a Towny town bank account.
+ */
 @SuppressWarnings("deprecation") //As far as I know Towny only has name based town economy
 public class takeTownMoney implements SignShopOperation {
     @Override

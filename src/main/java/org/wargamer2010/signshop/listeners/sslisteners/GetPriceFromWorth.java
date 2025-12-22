@@ -17,6 +17,9 @@ import org.wargamer2010.signshop.util.itemUtil;
 
 import java.util.logging.Level;
 
+/**
+ * Internal listener that calculates shop prices from Essentials worth.yml when signs have [worth] placeholder on line 4.
+ */
 public class GetPriceFromWorth implements Listener {
 
     private double getTotalPrice(final ItemStack[] pStacks) {

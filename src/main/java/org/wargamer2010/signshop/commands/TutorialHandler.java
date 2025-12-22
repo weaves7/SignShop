@@ -4,6 +4,10 @@ package org.wargamer2010.signshop.commands;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 import org.wargamer2010.signshop.util.commandUtil;
 
+/**
+ * Command handler for /signshop tutorial.
+ * Allows players to enable or disable the interactive tutorial system for shop creation.
+ */
 public class TutorialHandler implements ICommandHandler {
     private static final ICommandHandler instance = new TutorialHandler();
 

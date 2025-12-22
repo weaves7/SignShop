@@ -3,6 +3,10 @@ package org.wargamer2010.signshop.operations;
 import org.wargamer2010.essentials.SetExpFix;
 import org.wargamer2010.signshop.util.signshopUtil;
 
+/**
+ * Operation that deducts experience points from the player.
+ * Amount is specified on sign line 3, supports both raw XP and level-based modes.
+ */
 public class takePlayerXP implements SignShopOperation {
 
 

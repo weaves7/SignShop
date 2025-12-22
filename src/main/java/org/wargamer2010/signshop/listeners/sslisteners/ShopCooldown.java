@@ -13,6 +13,9 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Internal listener that enforces global shop usage cooldown per player to prevent spam.
+ */
 public class ShopCooldown implements Listener {
     private static final Map<String, Long> lastusedByPlayer = new LinkedHashMap<>();
 

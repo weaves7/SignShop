@@ -11,6 +11,12 @@ import org.wargamer2010.signshop.player.SignShopPlayer;
 
 import java.util.List;
 
+/**
+ * Validates player permissions for shop creation and usage.
+ *
+ * <p>Checks SignShop.Signs.* permissions and cancels events when players
+ * lack required permissions for specific shop types.</p>
+ */
 public class PermissionChecker implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)

@@ -9,6 +9,18 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Base class for all SignShop internal events.
+ *
+ * <p>Extends Bukkit's Event system with message parts for template substitution
+ * and cancellation support. All SignShop events (creation, transaction, destruction)
+ * extend this class.</p>
+ *
+ * @see SSCreatedEvent
+ * @see SSPreTransactionEvent
+ * @see SSPostTransactionEvent
+ * @see SSMoneyTransactionEvent
+ */
 public abstract class SSEvent extends Event implements Cancellable {
     private boolean bCancelled = false;
     private boolean bCanBeCancelled = true;

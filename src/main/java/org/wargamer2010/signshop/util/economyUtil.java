@@ -10,6 +10,14 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Utility methods for economy operations and price formatting.
+ *
+ * <p>Provides money formatting, price caching, and currency display helpers
+ * that integrate with Vault's economy system.</p>
+ *
+ * @see Vault
+ */
 public class economyUtil {
     public static final Map<String, Double> priceCache = new HashMap<>();
     private static SignShopConfig signShopConfig;
@@ -26,6 +34,13 @@ public class economyUtil {
         return (signShopConfig.getMoneyColor() + money + ChatColor.WHITE);
     }
 
+    /**
+     * Formats a money amount using Vault's economy formatter.
+     * Applies configured money color for display in chat messages.
+     *
+     * @param money The amount to format
+     * @return Colored, formatted money string (e.g., "§a$100.00§f")
+     */
     public static String formatMoney(double money) {
         if (Vault.getEconomy() == null)
             return attachColor(Double.toString(money));
@@ -33,6 +48,14 @@ public class economyUtil {
             return attachColor(Vault.getEconomy().format(money));
     }
 
+    /**
+     * Parses a price from a sign line, supporting both period and comma decimal separators.
+     * Extracts numeric characters and handles international number formats.
+     * Results are cached for performance when cachePrices is enabled.
+     *
+     * @param line The sign line containing the price (e.g., "$100" or "100,50")
+     * @return Parsed price as double, or 0.0 if invalid
+     */
     public static double parsePrice(String line) {
         if (line == null)
             return 0.0d;

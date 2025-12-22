@@ -8,6 +8,9 @@ import org.wargamer2010.signshop.SignShop;
 import java.util.Arrays;
 import java.util.logging.Level;
 
+/**
+ * Wrapper for written book metadata (pages, author, title, generation).
+ */
 public class BookItem implements IBookItem {
 
         protected BookMeta meta = null;

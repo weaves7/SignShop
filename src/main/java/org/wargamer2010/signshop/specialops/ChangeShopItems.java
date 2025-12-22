@@ -22,6 +22,10 @@ import org.wargamer2010.signshop.util.signshopUtil;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Special operation that updates the items stored in an existing shop.
+ * Triggered when shop owner uses the update material on a shop sign with new chest contents.
+ */
 public class ChangeShopItems implements SignShopSpecialOp {
 
     @Override

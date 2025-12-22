@@ -15,6 +15,18 @@ import org.wargamer2010.signshop.util.itemUtil;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Wrapper around Bukkit Player providing SignShop-specific functionality.
+ *
+ * <p>Abstracts player operations for shop owners and customers, handling
+ * both online and offline players. Provides methods for inventory management,
+ * money operations via Vault, messaging, and permission checks.</p>
+ *
+ * <p>Instances are cached via {@link PlayerCache} to avoid repeated creation.</p>
+ *
+ * @see PlayerCache
+ * @see PlayerIdentifier
+ */
 public class SignShopPlayer {
 
     private String playername = "";

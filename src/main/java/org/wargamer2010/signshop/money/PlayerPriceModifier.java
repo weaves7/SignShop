@@ -6,6 +6,16 @@ import org.wargamer2010.signshop.operations.SignShopArguments;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 import org.wargamer2010.signshop.util.signshopUtil;
 
+/**
+ * Price modifier that applies player-specific or permission-based price adjustments.
+ *
+ * <p>Applies discounts or surcharges based on player permissions and operation type.
+ * Uses the PriceMultipliers configuration section in config.yml.</p>
+ *
+ * @see MoneyModifierManager
+ * @see IMoneyModifier
+ * @see signshopUtil#ApplyPriceMod
+ */
 public class PlayerPriceModifier implements IMoneyModifier {
 
     @Override

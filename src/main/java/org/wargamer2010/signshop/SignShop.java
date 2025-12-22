@@ -38,6 +38,45 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.*;
 
+/**
+ * Main plugin class for SignShop - a Spigot/Bukkit plugin that enables creation of physical shops
+ * using signs and chests. Players can buy/sell items, execute commands, control redstone, and more
+ * by interacting with signs linked to chests.
+ *
+ * <p><b>Plugin Lifecycle:</b></p>
+ * <ul>
+ *   <li>{@link #onLoad()} - Registers WorldGuard flags before WorldGuard initialization</li>
+ *   <li>{@link #onEnable()} - Main initialization: config, storage, vault, events, listeners</li>
+ *   <li>{@link #onDisable()} - Cleanup: save data, close handlers, stop timers</li>
+ * </ul>
+ *
+ * <p><b>Singleton Pattern:</b></p>
+ * Access the plugin instance via {@link #getInstance()} from anywhere in the codebase.
+ *
+ * <p><b>Core Systems:</b></p>
+ * <ul>
+ *   <li><b>Configuration:</b> {@link SignShopConfig} - Loads config.yml, operation definitions, sign types</li>
+ *   <li><b>Storage:</b> {@link Storage} - Manages all shops in memory and persistence to sellers.yml</li>
+ *   <li><b>Vault Integration:</b> {@link Vault} - Economy and permissions via Vault API (hard dependency)</li>
+ *   <li><b>Commands:</b> {@link CommandDispatcher} - Routes /signshop subcommands to handlers</li>
+ *   <li><b>Timing:</b> {@link TimeManager} - Manages delayed/timed commands and expiration</li>
+ * </ul>
+ *
+ * <p><b>Debugging:</b></p>
+ * Enable verbose logging with {@code Debugging: true} in config.yml. Use {@link #debugMessage(String)}
+ * for general debug output or {@link #debugClassMessage(String, String)} for class-specific debugging
+ * controlled by {@code DebugClasses} config option.
+ *
+ * <p><b>Transaction Logging:</b></p>
+ * When {@code TransactionLog: true}, all shop transactions are logged to Transaction.log with
+ * customer, owner, operation, items, and price details via {@link #logTransaction}.
+ *
+ * @see SignShopConfig
+ * @see Storage
+ * @see Vault
+ * @see CommandDispatcher
+ * @see TimeManager
+ */
 public class SignShop extends JavaPlugin {
     private static final int CONFIG_VERSION_DO_NOT_TOUCH = 4;
     public static final int DATA_VERSION = 4;

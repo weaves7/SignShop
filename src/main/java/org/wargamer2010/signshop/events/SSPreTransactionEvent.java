@@ -11,6 +11,12 @@ import org.wargamer2010.signshop.player.SignShopPlayer;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Event fired before a shop transaction is executed.
+ *
+ * <p>Cancelling this event prevents the transaction. Listeners can modify
+ * the price, apply discounts, or add additional validation logic.</p>
+ */
 public class SSPreTransactionEvent extends SSEvent implements IOperationEvent {
     private static final HandlerList handlers = new HandlerList();
 

@@ -8,7 +8,18 @@ import org.bukkit.entity.Player;
 import java.lang.reflect.Method;
 import java.util.UUID;
 
-public class PlayerIdentifier { //TODO completely switch over to UUID support instead of PlayerIdentifier
+/**
+ * Abstraction for player identity supporting both UUID and name-based lookups.
+ *
+ * <p>Provides backwards compatibility for shops created before UUID support
+ * was added to Minecraft. New shops use UUID; legacy shops may use player names.</p>
+ *
+ * <p>TODO: Migrate fully to UUID-only support.</p>
+ *
+ * @see SignShopPlayer
+ * @see PlayerCache
+ */
+public class PlayerIdentifier {
     private static boolean didMethodLookup = false;
     private static boolean uuidSupport = false;
     private UUID id = null;

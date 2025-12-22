@@ -13,6 +13,10 @@ import org.wargamer2010.signshop.util.itemUtil;
 
 import java.util.List;
 
+/**
+ * Special operation that converts ChestShop plugin signs to SignShop format.
+ * Parses ChestShop sign syntax and creates equivalent SignShop [Buy] and [Sell] signs.
+ */
 public class ConvertChestshop implements SignShopSpecialOp {
     @Override
     public Boolean runOperation(List<Block> clickedBlocks, PlayerInteractEvent event, Boolean ranSomething) {

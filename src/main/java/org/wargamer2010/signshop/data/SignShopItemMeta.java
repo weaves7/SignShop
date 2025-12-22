@@ -22,7 +22,13 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
-
+/**
+ * Persistence layer for complex item metadata in SignShop.
+ *
+ * <p>Stores and retrieves advanced item metadata that may be lost during
+ * standard serialization, including enchantments, potion effects, firework
+ * properties, leather armor colors, and shulker box contents.</p>
+ */
 public class SignShopItemMeta {
     private static final String listSeperator = "~";
     private static final String valueSeperator = "-";

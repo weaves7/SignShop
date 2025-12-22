@@ -4,6 +4,9 @@ import nl.rutgerkok.blocklocker.BlockLockerAPIv2;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
+/**
+ * BlockLocker integration hook that checks access permissions for locked blocks.
+ */
 public class BlockLockerHook implements Hook {
     @Override
     public String getName() {

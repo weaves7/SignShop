@@ -25,6 +25,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Handles block-related events that affect SignShop shops.
+ *
+ * <p>Listens for block break, explosion, and burn events to detect when shop
+ * signs or linked blocks are destroyed. Fires {@link SSDestroyedEvent} and
+ * removes shops from storage when their blocks are removed.</p>
+ *
+ * @see SSDestroyedEvent
+ */
 public class SignShopBlockListener implements Listener {
 
     private List<Block> getAttachables(Block originalBlock) {

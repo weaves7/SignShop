@@ -5,6 +5,9 @@ import org.bukkit.inventory.meta.Damageable;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.util.signshopUtil;
 
+/**
+ * Shop operation that repairs the player's held item, with optional variable cost based on durability.
+ */
 public class repairPlayerHeldItem implements SignShopOperation {
     private void calculatePrice(SignShopArguments ssArgs) {
         ItemStack isInHand = ssArgs.getPlayer().get().getItemInHand();

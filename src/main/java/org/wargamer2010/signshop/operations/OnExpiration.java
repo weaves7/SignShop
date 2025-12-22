@@ -10,6 +10,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 
+/**
+ * Event handler that executes a specified operation when a timed shop expires.
+ */
 public class OnExpiration extends SignShopEventHandler {
 
     private void notifyUserOfInvalidParam(String block) {

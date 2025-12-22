@@ -14,6 +14,10 @@ import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.logging.Level;
 
+/**
+ * Command handler for /signshop stats.
+ * Displays shop statistics, plugin versions, and system information.
+ */
 public class StatsHandler implements ICommandHandler {
     private static final ICommandHandler instance = new StatsHandler();
 

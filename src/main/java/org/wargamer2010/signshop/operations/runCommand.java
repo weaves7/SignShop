@@ -7,6 +7,9 @@ import org.wargamer2010.signshop.player.SignShopPlayer;
 
 import java.util.List;
 
+/**
+ * Shop operation that executes configurable commands from config.yml when the shop is used.
+ */
 public class runCommand implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

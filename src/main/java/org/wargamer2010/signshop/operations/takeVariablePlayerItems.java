@@ -11,6 +11,9 @@ import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.*;
 
+/**
+ * Shop operation that takes variable amounts of items from player based on inventory contents, with durability adjustments.
+ */
 public class takeVariablePlayerItems implements SignShopOperation {
 
     private boolean doDurabilityNullification(SignShopArguments ssArgs) {

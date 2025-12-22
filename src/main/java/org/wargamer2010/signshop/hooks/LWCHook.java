@@ -8,6 +8,9 @@ import com.griefcraft.lwc.LWCPlugin;
 import com.griefcraft.lwc.LWC;
 import com.griefcraft.model.Protection;
 
+/**
+ * LWC integration hook that checks and creates block protections for chest locking.
+ */
 public class LWCHook implements Hook {
 
     @Override

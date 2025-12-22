@@ -13,6 +13,9 @@ import org.wargamer2010.signshop.player.SignShopPlayer;
 
 import java.util.List;
 
+/**
+ * Internal listener that enforces permit requirements for creating and using shops with specific item types.
+ */
 public class PermitChecker implements Listener {
 
     private boolean hasNoPermit(SignShopPlayer ssPlayer, List<String> operation, World world, ItemStack[] stacks) {

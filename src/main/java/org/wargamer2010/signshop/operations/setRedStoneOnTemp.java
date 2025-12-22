@@ -8,6 +8,9 @@ import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.util.lagSetter;
 import org.wargamer2010.signshop.util.signshopUtil;
 
+/**
+ * Shop operation that temporarily turns on linked levers, then turns them off after a delay.
+ */
 public class setRedStoneOnTemp implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

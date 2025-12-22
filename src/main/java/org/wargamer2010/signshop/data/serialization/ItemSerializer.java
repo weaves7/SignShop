@@ -17,31 +17,68 @@ import java.util.logging.Level;
 /**
  * Modern item serialization system for SignShop v5.1.0+
  *
- * <p><b>Architecture:</b></p>
+ * <p>This class provides a robust, version-stable serialization system for storing ItemStacks
+ * in SignShop's sellers.yml configuration file. It replaces the legacy Java object serialization
+ * approach which suffered from cross-version compatibility issues and class versioning problems.</p>
+ *
+ * <h2>Architecture</h2>
  * <pre>
  * Serialization:   ItemStack → Bukkit API → YAML → Base64 → String
  * Deserialization: String → Base64 → YAML → Bukkit API → ItemStack
  * </pre>
  *
- * <p><b>Why this approach:</b></p>
+ * <h2>Why this approach</h2>
  * <ul>
- *   <li><b>Bukkit API:</b> Version-stable, handles all item types correctly</li>
- *   <li><b>YAML:</b> Native Bukkit format, preserves PDC, handles complex objects</li>
- *   <li><b>Base64:</b> Single-line storage compatible with sellers.yml format</li>
+ *   <li><b>Bukkit API:</b> Version-stable serialization using {@link ItemStack#serialize()},
+ *       handles all item types correctly including custom items, enchantments, lore, and PDC</li>
+ *   <li><b>YAML:</b> Native Bukkit format via {@link YamlConfiguration}, human-readable,
+ *       preserves complex nested data structures</li>
+ *   <li><b>Base64:</b> Single-line encoding compatible with sellers.yml format, prevents
+ *       YAML structure conflicts</li>
  * </ul>
  *
- * <p><b>Format Prefixes:</b></p>
+ * <h2>Format Prefixes</h2>
  * <ul>
- *   <li><code>YAML:</code> - Modern format (v5.1.0+)</li>
- *   <li><code>LEGACY:</code> - Explicit legacy format marker</li>
- *   <li><i>No prefix</i> - Assumed legacy format</li>
+ *   <li><code>YAML:</code> - Modern format (v5.1.0+), preferred for all compatible items</li>
+ *   <li><code>LEGACY:</code> - Explicit legacy format marker for backward compatibility</li>
+ *   <li><i>No prefix</i> - Assumed legacy format from pre-5.1.0 versions</li>
  * </ul>
  *
- * <p><b>Fixes:</b> Issues #170, #168, #161, #165, #83</p>
+ * <h2>Data Version Normalization (v5.2.0+)</h2>
+ * <p>When Minecraft updates (e.g., 1.21.10 → 1.21.11), Bukkit's internal data version changes.
+ * Items stored before the update retain their old data version, causing {@link ItemStack#equals(Object)}
+ * to return false when comparing with items from player inventories. This breaks Trade shops and
+ * stock checking because {@link java.util.HashMap} lookups fail.</p>
+ *
+ * <p><b>Solution:</b> After deserializing items (both YAML and legacy), this class performs a
+ * round-trip through {@link ItemStack#serialize()} and {@link ItemStack#deserialize(Map)} to
+ * normalize the data version to the current Minecraft version.</p>
+ *
+ * <h2>Incompatibility Detection (v5.2.0+)</h2>
+ * <p>Some items serialize successfully but fail to deserialize later (e.g., player heads with
+ * empty names cause {@link NullPointerException} in Spigot 1.21.10+). The serialize() method
+ * proactively checks items using {@link IncompatibilityChecker} before attempting YAML serialization.
+ * If incompatibilities are detected, the item is immediately serialized to LEGACY format instead.</p>
+ *
+ * <h2>Automatic Fallback</h2>
+ * <ul>
+ *   <li>If YAML serialization fails → automatic fallback to LEGACY format</li>
+ *   <li>If YAML deserialization fails → automatic fallback to legacy parser</li>
+ *   <li>If ItemStack deserialization fails → returns null (graceful degradation)</li>
+ * </ul>
+ *
+ * <h2>Thread Safety</h2>
+ * <p>All methods are static and thread-safe. No shared mutable state exists.</p>
+ *
+ * <p><b>Fixes:</b> GitHub Issues #170, #168, #161, #165, #83</p>
  *
  * @author SignShop Development Team
- * @version 5.1.0
+ * @version 5.2.0
  * @since 5.1.0
+ * @see ItemStack#serialize()
+ * @see ItemStack#deserialize(Map)
+ * @see IncompatibilityChecker
+ * @see org.wargamer2010.signshop.util.DataConverter
  */
 public class ItemSerializer {
 
@@ -55,20 +92,31 @@ public class ItemSerializer {
     /**
      * Serializes an ItemStack to a storage-ready string.
      *
-     * <p><b>Enhanced Process (v5.2.0+):</b></p>
+     * <p><b>Process (v5.2.0+):</b></p>
      * <ol>
-     *   <li>Check for incompatibilities (IncompatibilityChecker)</li>
-     *   <li>If incompatible → Use LEGACY format proactively</li>
-     *   <li>If compatible → ItemStack → Bukkit serialize() → YAML → Base64 → "YAML:..." string</li>
+     *   <li>Check for incompatibilities using {@link IncompatibilityChecker}</li>
+     *   <li>If incompatible → Use LEGACY format proactively to prevent future NPE</li>
+     *   <li>If compatible → Serialize to YAML format:
+     *     <ul>
+     *       <li>Call {@link ItemStack#serialize()} to get Map representation</li>
+     *       <li>Convert Map to YAML string via {@link YamlConfiguration}</li>
+     *       <li>Encode YAML as Base64 for single-line storage</li>
+     *       <li>Add "YAML:" prefix</li>
+     *     </ul>
+     *   </li>
+     *   <li>If any error occurs → Automatic fallback to LEGACY format</li>
      * </ol>
      *
      * <p><b>Why check before serialization?</b></p>
-     * <p>Some items serialize to YAML successfully but fail to deserialize later,
-     * causing NPE when the shop is used. By checking first, we use LEGACY format
-     * proactively for known problematic items.</p>
+     * <p>Some items serialize to YAML successfully but fail to deserialize later (e.g., player
+     * heads with empty names in Spigot 1.21.10+ cause {@link NullPointerException} in
+     * CraftMetaSkull deserialization). By checking first, we use LEGACY format proactively
+     * for known problematic items, preventing shop usage failures.</p>
      *
-     * @param item The ItemStack to serialize (null returns null)
-     * @return Storage-ready string with YAML: or LEGACY: prefix, or null
+     * @param item The ItemStack to serialize (null-safe, returns null if item is null)
+     * @return Storage-ready string with "YAML:" or "LEGACY:" prefix, or null if both formats fail
+     * @see #deserialize(String)
+     * @see IncompatibilityChecker#checkItem(ItemStack)
      */
     public static String serialize(ItemStack item) {
         if (item == null) {
@@ -128,15 +176,31 @@ public class ItemSerializer {
     /**
      * Deserializes a string back to an ItemStack.
      *
-     * <p>Automatically detects format:</p>
+     * <p><b>Automatic Format Detection:</b></p>
      * <ul>
-     *   <li>YAML: prefix → Modern format</li>
-     *   <li>LEGACY: prefix → Explicit legacy</li>
-     *   <li>No prefix → Assumed legacy</li>
+     *   <li><code>"YAML:"</code> prefix → Modern format (v5.1.0+)</li>
+     *   <li><code>"LEGACY:"</code> prefix → Explicit legacy format</li>
+     *   <li>No prefix → Assumed legacy format from pre-5.1.0 versions</li>
      * </ul>
      *
-     * @param data The serialized string (null or empty returns null)
-     * @return Deserialized ItemStack, or null on failure
+     * <p><b>Data Version Normalization:</b></p>
+     * <p>After deserializing (both formats), performs a round-trip through
+     * {@link ItemStack#serialize()} and {@link ItemStack#deserialize(Map)} to normalize
+     * the data version to the current Minecraft version. This ensures items stored before
+     * Minecraft updates match player inventory items for Trade shops and stock checking.</p>
+     *
+     * <p><b>Error Handling:</b></p>
+     * <ul>
+     *   <li>Returns null if data is null or empty (safe for optional items)</li>
+     *   <li>If modern YAML parsing fails → automatic fallback to legacy parser</li>
+     *   <li>If ItemStack deserialization fails → returns null (graceful degradation)</li>
+     * </ul>
+     *
+     * @param data The serialized string (null-safe, returns null if data is null or empty)
+     * @return Deserialized ItemStack with normalized data version, or null on failure
+     * @see #serialize(ItemStack)
+     * @see #isModernFormat(String)
+     * @see #isLegacyFormat(String)
      */
     public static ItemStack deserialize(String data) {
         if (data == null || data.isEmpty()) {
@@ -162,8 +226,13 @@ public class ItemSerializer {
     /**
      * Checks if data is in modern YAML format.
      *
-     * @param data The serialized string to check
-     * @return true if modern format, false otherwise
+     * <p>This method is useful for migration logic and debugging to determine
+     * which shops have been upgraded to the modern format.</p>
+     *
+     * @param data The serialized string to check (null-safe)
+     * @return true if data starts with "YAML:" prefix, false otherwise (including null)
+     * @see #isLegacyFormat(String)
+     * @see org.wargamer2010.signshop.util.DataConverter
      */
     public static boolean isModernFormat(String data) {
         return data != null && data.startsWith(MODERN_PREFIX);
@@ -172,8 +241,19 @@ public class ItemSerializer {
     /**
      * Checks if data is in legacy format.
      *
-     * @param data The serialized string to check
-     * @return true if legacy format, false otherwise
+     * <p>A string is considered legacy format if:</p>
+     * <ul>
+     *   <li>It starts with "LEGACY:" prefix (explicit legacy), OR</li>
+     *   <li>It does NOT start with "YAML:" prefix (old data without prefix)</li>
+     * </ul>
+     *
+     * <p>This method is useful for migration logic to identify which shops
+     * need to be upgraded to the modern format.</p>
+     *
+     * @param data The serialized string to check (null-safe)
+     * @return true if data is legacy format, false if null, empty, or modern format
+     * @see #isModernFormat(String)
+     * @see org.wargamer2010.signshop.util.DataConverter
      */
     public static boolean isLegacyFormat(String data) {
         if (data == null || data.isEmpty()) {
@@ -188,7 +268,22 @@ public class ItemSerializer {
 
     /**
      * Deserializes modern YAML format.
-     * Process: "YAML:base64" → Base64 decode → YAML parse → Bukkit deserialize → ItemStack
+     *
+     * <p><b>Process:</b></p>
+     * <ol>
+     *   <li>Remove "YAML:" prefix and extract Base64 string</li>
+     *   <li>Decode Base64 to YAML string</li>
+     *   <li>Parse YAML to Map using {@link YamlConfiguration}</li>
+     *   <li>Call {@link ItemStack#deserialize(Map)} to create ItemStack</li>
+     *   <li>Normalize data version via round-trip serialize/deserialize</li>
+     * </ol>
+     *
+     * <p><b>Fallback Behavior:</b></p>
+     * <p>If YAML parsing fails, this method automatically attempts to deserialize
+     * the Base64 string as legacy format.</p>
+     *
+     * @param data The serialized string starting with "YAML:" (must not be null)
+     * @return Deserialized ItemStack with normalized data version, or null on failure
      */
     private static ItemStack deserializeModern(String data) {
         // Step 1: Remove prefix and get Base64 string
@@ -246,7 +341,20 @@ public class ItemSerializer {
 
     /**
      * Deserializes legacy BukkitObjectOutputStream format.
-     * Applies fixBookLegacy() for WRITTEN_BOOK items only.
+     *
+     * <p><b>Legacy Format:</b> Uses Java object serialization via
+     * {@link BukkitSerialization#itemStackArrayFromBase64(String)}.
+     * This format was used in SignShop versions prior to v5.1.0.</p>
+     *
+     * <p><b>Special Handling:</b></p>
+     * <ul>
+     *   <li>Written books have {@link itemUtil#fixBookLegacy(ItemStack)} applied</li>
+     *   <li>Data version normalization is performed after deserialization</li>
+     * </ul>
+     *
+     * @param base64 The Base64-encoded serialized data (must not be null)
+     * @return Deserialized ItemStack with normalized data version, or null if array is empty
+     * @throws IOException if Base64 decoding or object deserialization fails
      */
     private static ItemStack deserializeLegacy(String base64) throws IOException {
         // Use old BukkitSerialization to read legacy format
@@ -279,7 +387,12 @@ public class ItemSerializer {
 
     /**
      * Converts a Map to YAML string using Bukkit's YamlConfiguration.
-     * This ensures proper handling of all Bukkit-specific types.
+     *
+     * <p>This ensures proper handling of all Bukkit-specific types
+     * (Color, Enchantment, PotionEffect, etc.).</p>
+     *
+     * @param map The Map representation from {@link ItemStack#serialize()}
+     * @return YAML string representation of the item
      */
     private static String mapToYaml(Map<String, Object> map) {
         YamlConfiguration yaml = new YamlConfiguration();
@@ -289,6 +402,13 @@ public class ItemSerializer {
 
     /**
      * Converts YAML string back to Map using Bukkit's YamlConfiguration.
+     *
+     * <p><b>Pre-validation:</b> Checks for known corrupt data patterns
+     * (e.g., empty player head names that cause NPE in Spigot 1.21.10+).</p>
+     *
+     * @param yaml The YAML string to parse
+     * @return Map representation suitable for {@link ItemStack#deserialize(Map)}
+     * @throws RuntimeException if YAML parsing fails or corrupt data detected
      */
     private static Map<String, Object> yamlToMap(String yaml) {
         // Pre-validate: Detect corrupt player heads with empty names (causes NPE in Spigot 1.21)
@@ -333,6 +453,12 @@ public class ItemSerializer {
 
     /**
      * Encodes a string to Base64 for single-line storage.
+     *
+     * <p>This is necessary because sellers.yml format expects single-line values.
+     * Multi-line YAML strings would break the configuration file structure.</p>
+     *
+     * @param str The string to encode
+     * @return Base64-encoded string
      */
     private static String encodeBase64(String str) {
         byte[] bytes = str.getBytes(StandardCharsets.UTF_8);
@@ -341,6 +467,10 @@ public class ItemSerializer {
 
     /**
      * Decodes Base64 string back to original string.
+     *
+     * @param base64 The Base64-encoded string to decode
+     * @return Decoded string
+     * @throws RuntimeException if Base64 decoding fails (invalid format)
      */
     private static String decodeBase64(String base64) {
         try {
@@ -357,6 +487,13 @@ public class ItemSerializer {
 
     /**
      * Handles serialization errors by falling back to legacy format.
+     *
+     * <p>Called when modern YAML serialization fails. Attempts to serialize
+     * using the legacy BukkitObjectOutputStream format as a last resort.</p>
+     *
+     * @param item The ItemStack that failed to serialize
+     * @param e The exception that caused serialization to fail
+     * @return LEGACY-prefixed serialized string, or null if fallback also fails
      */
     private static String handleSerializationError(ItemStack item, Exception e) {
         SignShop.log(
@@ -378,6 +515,13 @@ public class ItemSerializer {
 
     /**
      * Handles deserialization errors with helpful logging.
+     *
+     * <p>Logs the error and, if debugging is enabled, logs a preview of the
+     * problematic data for troubleshooting.</p>
+     *
+     * @param data The data string that failed to deserialize
+     * @param e The exception that caused deserialization to fail
+     * @return Always returns null (deserialization failed)
      */
     private static ItemStack handleDeserializationError(String data, Exception e) {
         SignShop.log("Failed to deserialize item: " + e.getMessage(), Level.WARNING);
@@ -398,6 +542,11 @@ public class ItemSerializer {
 
     /**
      * Logs debug messages when debugging is enabled.
+     *
+     * <p>Messages are only logged if debugging is enabled in SignShopConfig
+     * and "ItemSerializer" is in the debug classes list (or debugging is global).</p>
+     *
+     * @param message The debug message to log
      */
     private static void debugLog(String message) {
         SignShop.getInstance().debugClassMessage(message, "ItemSerializer");

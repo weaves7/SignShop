@@ -42,12 +42,90 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Primary event listener for all player interactions with SignShop signs.
+ *
+ * <p>This class is the heart of SignShop's user interaction system. It handles:</p>
+ * <ul>
+ *   <li><b>Shop Creation</b>: Left-clicking a sign with the link material (default: redstone dust)
+ *       while having blocks selected triggers shop setup</li>
+ *   <li><b>Shop Usage</b>: Right-clicking executes transactions, left-clicking shows confirmation/info</li>
+ *   <li><b>Sign Customization</b>: Dyeing signs, applying glow ink, waxing with honeycomb</li>
+ *   <li><b>Shop Inspection</b>: Using the inspection material (default: stick) to view shop details</li>
+ *   <li><b>Special Operations</b>: CopySign, ChangeOwner, LinkAdditionalBlocks, etc.</li>
+ *   <li><b>Player Selection</b>: Hitting players with the link material to select them for operations</li>
+ * </ul>
+ *
+ * <h2>Interaction Flow</h2>
+ * <pre>
+ * PlayerInteractEvent
+ *     │
+ *     ├─→ Shop Creation (left-click sign + link material + no existing shop)
+ *     │       │
+ *     │       ├─→ Parse operation from sign text
+ *     │       ├─→ Get linked blocks from clicks map
+ *     │       ├─→ Run setupOperation() on each operation
+ *     │       ├─→ Fire SSCreatedEvent
+ *     │       └─→ Store in Storage.addSeller()
+ *     │
+ *     ├─→ Shop Transaction (click existing shop without OP material)
+ *     │       │
+ *     │       ├─→ Load chunks for shop's blocks
+ *     │       ├─→ Run checkRequirements() on each operation
+ *     │       ├─→ Fire SSPreTransactionEvent
+ *     │       ├─→ Left-click: Show confirmation message and return
+ *     │       ├─→ Right-click: Run runOperation() on each operation
+ *     │       ├─→ Fire SSPostTransactionEvent
+ *     │       └─→ Log transaction
+ *     │
+ *     ├─→ Sign Customization (right-click shop + dye/ink/honeycomb/brush)
+ *     │       └─→ Apply visual changes if player has permission
+ *     │
+ *     ├─→ Shop Inspection (right-click shop + inspection material)
+ *     │       └─→ Display shop info if player has permission
+ *     │
+ *     └─→ Special Operations (click with link material)
+ *             └─→ Delegate to SignShopSpecialOp implementations
+ * </pre>
+ *
+ * <h2>Click Map System</h2>
+ * <p>The {@link clicks} utility class maintains a map of blocks that players have selected
+ * by left-clicking with the link material. When creating a shop, these selected blocks
+ * become the shop's containables (chests) and activatables (levers, etc.).</p>
+ *
+ * @see SignShopArguments The context object passed through the operation pipeline
+ * @see SignShopOperationListItem Individual operations that make up a shop type
+ * @see Storage Where shops are persisted
+ * @see clicks Block selection tracking
+ */
 public class SignShopPlayerListener implements Listener {
+    /** Prefix for player metadata tracking which shop types they've seen help for */
     private static final String helpPrefix = "help_";
+    /** Metadata key indicating player has dismissed all help messages */
     private static final String anyHelp = "help_anyhelp";
 
+    /**
+     * Attempts to run special operations (CopySign, ChangeOwner, etc.) based on player's clicked blocks.
+     *
+     * <p>Special operations are administrative actions that modify existing shops rather than
+     * creating new ones or performing transactions. They are triggered when a player has
+     * selected blocks and clicks on a shop sign with the link material.</p>
+     *
+     * <p>Examples of special operations:</p>
+     * <ul>
+     *   <li>{@code CopySign} - Copies a shop's configuration to a new sign</li>
+     *   <li>{@code ChangeOwner} - Transfers shop ownership to another player</li>
+     *   <li>{@code LinkAdditionalBlocks} - Adds more chests/blocks to an existing shop</li>
+     *   <li>{@code ChangeShopItems} - Updates the items in a shop using ink sac</li>
+     * </ul>
+     *
+     * @param event The player interact event that triggered this check
+     * @return {@code true} if any special operation was executed, {@code false} otherwise
+     * @see SignShopSpecialOp The interface all special operations implement
+     */
     private Boolean runSpecialOperations(PlayerInteractEvent event) {
         Player player = event.getPlayer();
+        // Get all blocks this player has selected by left-clicking with link material
         Set<Location> lClicked = signshopUtil.getKeysByValue(clicks.mClicksPerLocation, player);
         Boolean ranSomething = false;
 
@@ -56,12 +134,14 @@ public class SignShopPlayerListener implements Listener {
         for (Location lTemp : lClicked)
             clickedBlocks.add(player.getWorld().getBlockAt(lTemp));
         if (!specialops.isEmpty()) {
+            // Try each special operation until one succeeds
             for (SignShopSpecialOp special : specialops) {
                 ranSomething = (special.runOperation(clickedBlocks, event, ranSomething) || ranSomething);
                 if (ranSomething) {
                     break;
                 }
             }
+            // Clear the click map after a successful special operation
             if (ranSomething)
                 clicks.removePlayerFromClickmap(player);
         }
@@ -69,13 +149,24 @@ public class SignShopPlayerListener implements Listener {
         return ranSomething;
     }
 
+    /**
+     * Prevents ghost shops when a sign is replaced by placing a new block.
+     *
+     * <p>This fixes a bug where placing a block at a shop sign's location would leave
+     * orphaned shop data in storage. The fix removes any existing shop at the location
+     * when a new block is placed there.</p>
+     *
+     * <p>Credit: Cat7373 - <a href="https://github.com/wargamer/SignShop/issues/15">Issue #15</a></p>
+     *
+     * @param event The block place event
+     */
     @EventHandler(priority = EventPriority.LOWEST)
     public void SSBugFix(BlockPlaceEvent event) {
-        // credits go to Cat7373 for the fix below, https://github.com/wargamer/SignShop/issues/15
         if (event.isCancelled())
             return;
         Block block = event.getBlock();
 
+        // If a sign is being placed where a shop exists, remove the old shop data
         if (itemUtil.clickedSign(block)) {
             Location location = block.getLocation();
 
@@ -85,6 +176,15 @@ public class SignShopPlayerListener implements Listener {
         }
     }
 
+    /**
+     * Optionally blocks villager trading when configured.
+     *
+     * <p>Some server administrators want to disable vanilla villager trading to force
+     * players to use SignShop for all trading. This is controlled by the
+     * {@code PreventVillagerTrade} config option.</p>
+     *
+     * @param event The entity interaction event
+     */
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerVillagerTrade(PlayerInteractEntityEvent event) {
         if (event.getPlayer() == null || event.getRightClicked() == null)
@@ -99,6 +199,18 @@ public class SignShopPlayerListener implements Listener {
         }
     }
 
+    /**
+     * Handles player selection for operations that target other players.
+     *
+     * <p>Some shop types (like ChangeOwner) need to reference another player. This handler
+     * allows players to "select" other players by hitting them with the link material
+     * (default: redstone dust). The selected player is stored in the clicks map and can
+     * be used by subsequent operations.</p>
+     *
+     * <p>Hitting the same player again deselects them (toggle behavior).</p>
+     *
+     * @param event The entity damage event
+     */
     @EventHandler(priority = EventPriority.HIGH)
     public void onEntityDamageByEntity(EntityDamageByEntityEvent event) {
         if (event.getDamager().getType() != EntityType.PLAYER)
@@ -106,12 +218,14 @@ public class SignShopPlayerListener implements Listener {
 
         Player player = (Player) event.getDamager();
 
+        // Only process if player is holding an OP material (link material)
         if (player.getInventory().getItemInMainHand() == null || !SignShop.getInstance().getSignShopConfig().isOPMaterial(player.getInventory().getItemInMainHand().getType()))
             return;
         if (event.getEntity().getType() == EntityType.PLAYER) {
             SignShopPlayer ssPlayer = PlayerCache.getPlayer(player);
             SignShopPlayer clickedPlayer = PlayerCache.getPlayer((Player) event.getEntity());
 
+            // Toggle selection - deselect if already selected, otherwise select
             if (clicks.mClicksPerPlayerId.containsKey(clickedPlayer.GetIdentifier())) {
                 ssPlayer.sendMessage("You have deselected a player with name: " + clickedPlayer.getName());
                 clicks.mClicksPerPlayerId.remove(clickedPlayer.GetIdentifier());
@@ -120,21 +234,36 @@ public class SignShopPlayerListener implements Listener {
                 ssPlayer.sendMessage("You hit a player with name: " + clickedPlayer.getName());
                 clicks.mClicksPerPlayerId.put(clickedPlayer.GetIdentifier(), player);
             }
+            // Cancel damage - this is just for selection, not combat
             event.setCancelled(true);
         }
     }
 
+    /**
+     * Shows tutorial messages when players write valid shop sign types.
+     *
+     * <p>When a player writes text on a sign that matches a valid SignShop operation
+     * (like "[Buy]" or "[Sell]"), this handler displays a tutorial message explaining
+     * how to set up that shop type. Tutorial messages are only shown once per shop type
+     * per player (tracked in player metadata).</p>
+     *
+     * <p>The tutorial system can be disabled via the {@code EnableTutorialMessages} config option.</p>
+     *
+     * @param event The sign change event
+     */
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerSignChange(SignChangeEvent event) {
         if (event.getPlayer() == null || !itemUtil.clickedSign(event.getBlock()))
             return;
         String[] oldLines = ((Sign) event.getBlock().getState()).getSide(Side.FRONT).getLines();
         // Prevent the message from being shown when the top line remains the same
+        // (e.g., when editing other lines of an existing sign)
         if (oldLines[0].equals(event.getLine(0)))
             return;
 
         String[] sLines = event.getLines();
         String sOperation = signshopUtil.getOperation(sLines[0]);
+        // Only show tutorial for valid shop operations
         if (SignShop.getInstance().getSignShopConfig().getBlocks(sOperation).isEmpty())
             return;
 
@@ -144,6 +273,8 @@ public class SignShopPlayerListener implements Listener {
 
         SignShopPlayer ssPlayer = PlayerCache.getPlayer(event.getPlayer());
         if (SignShop.getInstance().getSignShopConfig().getEnableTutorialMessages()) {
+            // Only show tutorial if player hasn't seen it for this operation type
+            // and hasn't dismissed all tutorials (anyHelp flag)
             if (!ssPlayer.hasMeta(helpPrefix + sOperation.toLowerCase()) && !ssPlayer.hasMeta(anyHelp)) {
                 ssPlayer.setMeta(helpPrefix + sOperation.toLowerCase(), "1");
                 String[] args = new String[]{
@@ -154,15 +285,65 @@ public class SignShopPlayerListener implements Listener {
         }
     }
 
+    /**
+     * Resets player state when they leave the server.
+     *
+     * <p>Clears the "ignore messages" flag which may have been set during certain
+     * operations to prevent message spam.</p>
+     *
+     * @param event The player quit event
+     */
     @EventHandler
     public void onPlayerLeave(PlayerQuitEvent event) {
         SignShopPlayer signShopPlayer = PlayerCache.getPlayer(event.getPlayer());
         signShopPlayer.setIgnoreMessages(false);
     }
 
+    /**
+     * Main handler for all player block interactions - the core of SignShop's functionality.
+     *
+     * <p>This method handles multiple distinct interaction types based on context:</p>
+     *
+     * <h3>1. Shop Creation (Left-click + Link Material + No Existing Shop)</h3>
+     * <ol>
+     *   <li>Parse operation type from sign's first line (e.g., "[Buy]")</li>
+     *   <li>Gather linked blocks from the player's click map</li>
+     *   <li>Run {@code setupOperation()} on each operation in the chain</li>
+     *   <li>Fire {@link SSCreatedEvent} for listeners to validate/modify</li>
+     *   <li>Store the new shop via {@link Storage#addSeller}</li>
+     * </ol>
+     *
+     * <h3>2. Shop Transaction (Click Existing Shop Without OP Material)</h3>
+     * <ol>
+     *   <li>Load chunks containing the shop's linked blocks</li>
+     *   <li>Run {@code checkRequirements()} on each operation</li>
+     *   <li>Fire {@link SSPreTransactionEvent}</li>
+     *   <li><b>Left-click</b>: Show confirmation message and return</li>
+     *   <li><b>Right-click</b>: Run {@code runOperation()} on each operation</li>
+     *   <li>Fire {@link SSPostTransactionEvent}</li>
+     *   <li>Log the transaction</li>
+     * </ol>
+     *
+     * <h3>3. Shop Inspection (Right-click + Inspection Material)</h3>
+     * <p>Display shop information if player has permission.</p>
+     *
+     * <h3>4. Sign Customization (Right-click + Dye/Ink/Honeycomb/Brush)</h3>
+     * <p>Apply visual changes to the sign (color, glow, wax).</p>
+     *
+     * <h3>5. Special Operations (Click + Link Material + Existing Shop)</h3>
+     * <p>Delegate to special operation handlers (CopySign, ChangeOwner, etc.).</p>
+     *
+     * <h3>6. Block Selection (Left-click + Link Material + Non-Sign)</h3>
+     * <p>Register the block in the player's click map for future shop creation.</p>
+     *
+     * @param event The player interact event
+     * @see SignShopArguments Context object passed through the operation pipeline
+     * @see SSPreTransactionEvent Fired before transaction execution
+     * @see SSPostTransactionEvent Fired after successful transaction
+     */
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractEvent event) {
-        // Respect protection plugins
+        // Respect protection plugins - if another plugin denied the interaction, don't process
         if (event.getClickedBlock() == null
                 || event.useInteractedBlock() == Event.Result.DENY
                 || event.getPlayer() == null) {
@@ -436,17 +617,63 @@ public class SignShopPlayerListener implements Listener {
         }
     }
 
+    /**
+     * Checks if a player has permission to inspect (view details of) a shop.
+     *
+     * <p>Permission is granted if any of these conditions are true:</p>
+     * <ul>
+     *   <li>Player owns the shop AND has {@code Signshop.Inspect.Own} permission</li>
+     *   <li>Player is a server operator</li>
+     *   <li>Player has {@code Signshop.Inspect.Others} permission</li>
+     * </ul>
+     *
+     * @param seller The shop to inspect
+     * @param signShopPlayer The player attempting to inspect
+     * @return {@code true} if the player can inspect the shop
+     */
     private boolean playerCanInspect(Seller seller, SignShopPlayer signShopPlayer) {
         return ((signShopPlayer.isOwner(seller) && signShopPlayer.hasPerm("Signshop.Inspect.Own", false))
                 || signShopPlayer.isOp() || signShopPlayer.hasPerm("Signshop.Inspect.Others", true));
     }
 
+    /**
+     * Checks if a player has permission to dye/customize a shop sign.
+     *
+     * <p>Permission is granted if any of these conditions are true:</p>
+     * <ul>
+     *   <li>Player owns the shop AND has {@code Signshop.Dye.Own} permission</li>
+     *   <li>Player is a server operator</li>
+     *   <li>Player has {@code Signshop.Dye.Others} permission</li>
+     * </ul>
+     *
+     * @param seller The shop to customize
+     * @param signShopPlayer The player attempting to dye
+     * @return {@code true} if the player can dye the shop sign
+     */
     private boolean playerCanDyeShop(Seller seller, SignShopPlayer signShopPlayer) {
         return ((signShopPlayer.isOwner(seller) && signShopPlayer.hasPerm("Signshop.Dye.Own", false))
                 || signShopPlayer.isOp() || signShopPlayer.hasPerm("Signshop.Dye.Others", true));
 
     }
 
+    /**
+     * Checks if an item is used for sign customization (dyes, ink sacs, honeycomb, brush).
+     *
+     * <p>These items have special handling when right-clicking shop signs:</p>
+     * <ul>
+     *   <li><b>Dyes</b>: Change sign text color</li>
+     *   <li><b>Glow Ink Sac</b>: Make sign text glow</li>
+     *   <li><b>Ink Sac</b>: Remove glow effect from sign text</li>
+     *   <li><b>Honeycomb</b>: Wax the sign (prevent further edits)</li>
+     *   <li><b>Brush</b>: Remove wax from sign</li>
+     * </ul>
+     *
+     * <p>Note: Link materials and inspection materials are excluded even if they
+     * happen to be dye-related items.</p>
+     *
+     * @param item The item to check
+     * @return {@code true} if the item is used for sign customization
+     */
     private boolean itemIsInkOrDyeRelated(ItemStack item) {
         if (item == null || SignShop.getInstance().getSignShopConfig().isLinkMaterial(item.getType()) || SignShop.getInstance().getSignShopConfig().isInspectionMaterial(item))
             return false;

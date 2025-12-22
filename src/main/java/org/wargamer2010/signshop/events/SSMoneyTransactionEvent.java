@@ -11,6 +11,16 @@ import org.wargamer2010.signshop.player.SignShopPlayer;
 
 import java.util.Map;
 
+/**
+ * Event fired for money operations (balance checks and transfers).
+ *
+ * <p>Listeners (like {@link org.wargamer2010.signshop.listeners.sslisteners.BankTransaction})
+ * handle the actual economy integration. The event has request types for
+ * checking balance vs executing transfers.</p>
+ *
+ * @see SSMoneyEventType
+ * @see SSMoneyRequestType
+ */
 public class SSMoneyTransactionEvent extends SSEvent implements IOperationEvent {
     private static final HandlerList handlers = new HandlerList();
 

@@ -37,7 +37,39 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
+/**
+ * Utility class for ItemStack operations used throughout SignShop.
+ *
+ * <p>Provides static utility methods for item manipulation, comparison, serialization,
+ * inventory operations, and UI component generation. This is one of the most frequently
+ * used utility classes in the codebase.</p>
+ *
+ * <h2>Key Functionality:</h2>
+ * <ul>
+ *   <li><b>Item Serialization:</b> {@link #convertItemStacksToString(ItemStack[])} and
+ *       {@link #convertStringtoItemStacks(List)} for persistence</li>
+ *   <li><b>Inventory Operations:</b> {@link #getItemStacksForContainables(List)},
+ *       {@link #getAllItemStacksForContainables(List)} for chest access</li>
+ *   <li><b>Item Comparison:</b> {@link #itemstacksEqual(ItemStack, ItemStack, boolean)} for
+ *       trade shops and stock checking</li>
+ *   <li><b>UI Components:</b> {@link #itemStackToComponent(ItemStack, boolean)} for hover
+ *       tooltips in chat messages</li>
+ *   <li><b>Chunk Loading:</b> {@link #loadChunkByBlock(Block)} ensures chest chunks are loaded</li>
+ * </ul>
+ *
+ * <h2>Hover Tooltip System:</h2>
+ * <p>The {@link #itemStackToComponent} method creates chat components with hover events
+ * showing item details. On Paper servers, uses full item tooltips via reflection
+ * ({@code serializeItemAsJson}). On Spigot, shows limited info due to API restrictions.</p>
+ *
+ * <h2>Thread Safety:</h2>
+ * <p>All methods are static. Most are NOT thread-safe and must be called from the main thread
+ * as they interact with Bukkit API (blocks, inventories).</p>
+ *
+ * @see ItemSerializer
+ * @see SignShopArguments
+ * @see signshopUtil
+ */
 public class itemUtil {
     public static Map<Material, String> formattedMaterials = new HashMap<>();
     private static SignShopConfig signShopConfig;
@@ -78,6 +110,12 @@ public class itemUtil {
         return isBackupToTake;
     }
 
+    /**
+     * Gets all items from all containable blocks (chests, barrels, etc.).
+     *
+     * @param containables List of container blocks to extract items from
+     * @return Array of all non-null items found in the containers
+     */
     public static ItemStack[] getAllItemStacksForContainables(List<Block> containables) {
         List<ItemStack> tempItems = new LinkedList<>();
 
@@ -95,10 +133,26 @@ public class itemUtil {
         return tempItems.toArray(new ItemStack[0]);
     }
 
+    /**
+     * Checks if any containable has sufficient stock for the given items.
+     *
+     * @param containables List of container blocks to check
+     * @param items Items to check stock for
+     * @param bTakeOrGive true = check if items can be taken, false = check if items can fit
+     * @return true if any container has sufficient stock
+     */
     public static boolean stockOKForContainables(List<Block> containables, ItemStack[] items, boolean bTakeOrGive) {
         return (getFirstStockOKForContainables(containables, items, bTakeOrGive) != null);
     }
 
+    /**
+     * Finds the first containable with sufficient stock for the given items.
+     *
+     * @param containables List of container blocks to check
+     * @param items Items to check stock for
+     * @param bTakeOrGive true = check if items can be taken, false = check if items can fit
+     * @return First InventoryHolder with sufficient stock, or null if none found
+     */
     public static InventoryHolder getFirstStockOKForContainables(List<Block> containables, ItemStack[] items, boolean bTakeOrGive) {
         for(Block bHolder : containables) {
             if(bHolder.getState() instanceof InventoryHolder) {
@@ -143,6 +197,12 @@ public class itemUtil {
         item.setItemMeta(copyMeta);
     }
 
+    /**
+     * Converts an integer to Roman numerals (used for enchantment level display).
+     *
+     * @param binary Integer value to convert (1-3999)
+     * @return Roman numeral string, or empty string if out of range
+     */
     public static String binaryToRoman(int binary) {
         final String[] RCODE = {"M", "CM", "D", "CD", "C", "XC", "L",
                                            "XL", "X", "IX", "V", "IV", "I"};
@@ -235,6 +295,13 @@ public class itemUtil {
         return tags.copyTags(item, isBackup);
     }
 
+    /**
+     * Converts an array of ItemStacks to a human-readable string for chat messages.
+     * Consolidates duplicate items and includes enchantments/lore if configured.
+     *
+     * @param isStacks The item stacks to convert
+     * @return Formatted string like "5 Diamond Sword, 3 Iron Pickaxe"
+     */
     public static String itemStackToString(ItemStack[] isStacks) {
         if(isStacks == null)
             return "";
@@ -465,6 +532,12 @@ public class itemUtil {
         return enchantmentMessage.toString();
     }
 
+    /**
+     * Sets the color of a shop sign's first line to indicate stock status.
+     *
+     * @param sign The sign block to update
+     * @param color The color to apply (typically blue=stocked, red=out of stock)
+     */
     public static void setSignStatus(Block sign, ChatColor color) {
         if(clickedSign(sign)) {
             Sign signblock = ((Sign) sign.getState());
@@ -513,6 +586,13 @@ public class itemUtil {
         return true;
     }
 
+    /**
+     * Converts an ItemStack array to a map of item type to total quantity.
+     * Used for consolidating and counting items across multiple stacks.
+     *
+     * @param isStacks Array of ItemStacks to consolidate
+     * @return Map where key is item (amount=1) and value is total count
+     */
     public static HashMap<ItemStack, Integer> StackToMap(ItemStack[] isStacks) {
         ItemStack[] isBackup = getBackupItemStack(isStacks);
         HashMap<ItemStack, Integer> mReturn = new HashMap<>();
@@ -532,6 +612,12 @@ public class itemUtil {
         return mReturn;
     }
 
+    /**
+     * Creates a deep copy of an ItemStack array (clones each item).
+     *
+     * @param isOriginal Original array to clone
+     * @return New array with cloned ItemStacks, or null if input is null
+     */
     public static ItemStack[] getBackupItemStack(ItemStack[] isOriginal) {
         if(isOriginal == null)
             return null;
@@ -668,6 +754,13 @@ public class itemUtil {
     }
 
 
+    /**
+     * Deserializes a list of serialized item strings back to ItemStacks.
+     *
+     * @param itemStringList List of serialized item strings from sellers.yml
+     * @return Array of deserialized ItemStacks (may contain nulls if deserialization fails)
+     * @see ItemSerializer#deserialize
+     */
     public static ItemStack[] convertStringtoItemStacks(List<String> itemStringList) {
         ItemStack[] itemStacks = new ItemStack[itemStringList.size()];
 
@@ -705,6 +798,13 @@ public class itemUtil {
         return false;
     }
 
+    /**
+     * Serializes an array of ItemStacks to strings for persistence in sellers.yml.
+     *
+     * @param itemStackArray Items to serialize
+     * @return Array of serialized strings (YAML: or LEGACY: prefixed)
+     * @see ItemSerializer#serialize
+     */
     public static String[] convertItemStacksToString(ItemStack[] itemStackArray) {
         List<String> itemStringList = new ArrayList<>();
         if (itemStackArray == null) {
@@ -729,6 +829,15 @@ public class itemUtil {
     }
 
 
+    /**
+     * Compares two ItemStacks for equality, optionally ignoring durability.
+     * Used for trade shop item matching.
+     *
+     * @param a First ItemStack to compare
+     * @param b Second ItemStack to compare
+     * @param ignoredur If true, ignores durability differences
+     * @return true if items are equal based on type, enchantments, and metadata
+     */
     @SuppressWarnings("deprecation")
     public static boolean itemstackEqual(ItemStack a, ItemStack b, boolean ignoredur) {
         if(a.getType() != b.getType())
@@ -743,6 +852,13 @@ public class itemUtil {
         return a.getMaxStackSize() == b.getMaxStackSize();
     }
 
+    /**
+     * Ensures chunks around a block are loaded within a given radius.
+     * Critical for shop operations when chests may be in unloaded chunks.
+     *
+     * @param block Center block
+     * @param radius Number of chunk-sized steps to load in each direction
+     */
     public static void loadChunkByBlock(Block block, int radius) {
         boolean OK = true;
         int chunksize = 12;
@@ -760,6 +876,12 @@ public class itemUtil {
 
     }
 
+    /**
+     * Ensures the chunk containing a block is loaded.
+     *
+     * @param block Block whose chunk should be loaded
+     * @return true if chunk is now loaded, false if load failed or block is null
+     */
     public static boolean loadChunkByBlock(Block block) {
         if(block == null)
             return false;

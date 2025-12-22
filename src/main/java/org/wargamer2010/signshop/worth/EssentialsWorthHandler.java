@@ -8,6 +8,10 @@ import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
 
+/**
+ * Worth handler implementation that integrates with the Essentials plugin.
+ * Retrieves item worth values from Essentials' worth.yml configuration.
+ */
 public class EssentialsWorthHandler implements WorthHandler {
     IEssentials ess;
     Worth worth;

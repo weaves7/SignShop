@@ -8,6 +8,9 @@ import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.events.SSLinkEvent;
 import org.wargamer2010.signshop.hooks.HookManager;
 
+/**
+ * Internal listener that prevents linking blocks to shops if the player lacks build permissions via protection plugins.
+ */
 public class SimpleBlockProtector implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)

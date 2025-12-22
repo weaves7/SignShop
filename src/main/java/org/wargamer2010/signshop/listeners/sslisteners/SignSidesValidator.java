@@ -13,7 +13,9 @@ import org.wargamer2010.signshop.events.SSCreatedEvent;
 import java.util.Arrays;
 import java.util.Collection;
 
-
+/**
+ * Internal listener that validates both sides of signs to prevent blacklisted text and conflicting shop types.
+ */
 public class SignSidesValidator implements Listener {
 
     SignShopConfig config;

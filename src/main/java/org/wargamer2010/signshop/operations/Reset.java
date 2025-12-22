@@ -1,5 +1,9 @@
 package org.wargamer2010.signshop.operations;
 
+/**
+ * Operation that resets SignShopArguments state during shop operation execution.
+ * Clears temporary data to prevent leakage between operation phases.
+ */
 public class Reset implements SignShopOperation {    
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {        

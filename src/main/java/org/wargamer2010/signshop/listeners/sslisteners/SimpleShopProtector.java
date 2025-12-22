@@ -34,6 +34,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Internal listener that protects shop signs and blocks from unauthorized destruction and handles automatic chest locking.
+ */
 public class SimpleShopProtector implements Listener {
     private Boolean canDestroy(Player player, Block bBlock) {
         SignShopPlayer ssPlayer = PlayerCache.getPlayer(player);

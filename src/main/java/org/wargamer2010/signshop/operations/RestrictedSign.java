@@ -8,6 +8,9 @@ import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.List;
 
+/**
+ * Shop operation that registers restricted signs to limit shop access.
+ */
 public class RestrictedSign implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

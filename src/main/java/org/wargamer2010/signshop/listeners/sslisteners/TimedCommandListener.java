@@ -12,6 +12,9 @@ import org.wargamer2010.signshop.timing.TimedCommand;
 import java.util.List;
 import java.util.logging.Level;
 
+/**
+ * Internal listener that executes delayed commands from config when timed operations expire.
+ */
 public class TimedCommandListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onRentExpired(SSExpiredEvent event) {

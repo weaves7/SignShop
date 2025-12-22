@@ -12,8 +12,16 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-// Stolen from : https://gist.github.com/graywolf336/8153678#file-bukkitserialization-java
-// All credits go to graywolf336
+/**
+ * Legacy Java object serialization for ItemStacks.
+ *
+ * <p>Uses Bukkit's BukkitObjectOutputStream/BukkitObjectInputStream for Base64
+ * encoding. This is the pre-5.1.0 format kept for backward compatibility.</p>
+ *
+ * <p>Based on graywolf336's implementation.</p>
+ *
+ * @see ItemSerializer
+ */
 public class BukkitSerialization {
     private BukkitSerialization() {
 

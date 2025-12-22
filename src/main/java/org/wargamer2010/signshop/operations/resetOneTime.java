@@ -6,6 +6,10 @@ import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.logging.Level;
 
+/**
+ * Operation that removes one-time usage restriction from a player.
+ * Allows players to use a one-time shop again after metadata is cleared.
+ */
 public class resetOneTime implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

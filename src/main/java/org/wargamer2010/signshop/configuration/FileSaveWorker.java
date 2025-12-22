@@ -3,12 +3,22 @@ package org.wargamer2010.signshop.configuration;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.wargamer2010.signshop.SignShop;
+import org.wargamer2010.signshop.data.Storage;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 
+/**
+ * Async worker for saving YAML configuration files.
+ *
+ * <p>Runs on a separate thread to avoid blocking the main server thread during
+ * file I/O operations. Uses a queue to batch save requests and runs periodically
+ * via Bukkit's scheduler.</p>
+ *
+ * @see Storage
+ */
 public class FileSaveWorker extends BukkitRunnable {
 
     File ymlfile;

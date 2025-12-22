@@ -8,6 +8,9 @@ import org.wargamer2010.signshop.util.signshopUtil;
 import java.util.List;
 import java.util.logging.Level;
 
+/**
+ * Abstract base for operations that respond to SignShop internal events.
+ */
 public abstract class SignShopEventHandler implements SignShopOperation {
     @Override
     public Boolean runOperation(SignShopArguments ssArgs) {

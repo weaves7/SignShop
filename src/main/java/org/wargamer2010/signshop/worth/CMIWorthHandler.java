@@ -8,6 +8,10 @@ import org.wargamer2010.signshop.SignShop;
 
 import java.util.logging.Level;
 
+/**
+ * Worth handler implementation that integrates with the CMI (Custom Management Interface) plugin.
+ * Retrieves item worth values from CMI's worth system.
+ */
 public class CMIWorthHandler implements WorthHandler {
     private final WorthManager worthManager;
 

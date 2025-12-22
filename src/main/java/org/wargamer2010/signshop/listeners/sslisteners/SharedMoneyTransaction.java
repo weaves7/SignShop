@@ -22,6 +22,9 @@ import java.util.Map;
 import static org.wargamer2010.signshop.util.signshopUtil.getSignsFromMisc;
 import static org.wargamer2010.signshop.util.signshopUtil.lineIsEmpty;
 
+/**
+ * Internal listener that distributes shop earnings among multiple players using ShareSign percentage splits.
+ */
 public class SharedMoneyTransaction implements Listener {
     private static boolean distributeMoney(Seller seller, double fPrice, SignShopPlayer ssPlayer) {
         List<Block> shareSigns = getSignsFromMisc(seller, "sharesigns");

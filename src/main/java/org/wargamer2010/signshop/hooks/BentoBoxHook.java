@@ -9,7 +9,9 @@ import world.bentobox.bentobox.managers.RanksManager;
 
 import java.util.Optional;
 
-
+/**
+ * BentoBox integration hook that checks island membership for skyblock/gamemode addon protection.
+ */
 public class BentoBoxHook implements Hook {
     @Override
     public String getName() {

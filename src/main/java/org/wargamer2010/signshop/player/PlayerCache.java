@@ -6,6 +6,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Cache for {@link SignShopPlayer} and {@link PlayerIdentifier} instances.
+ *
+ * <p>Avoids repeated object creation by caching player wrappers. Entries are
+ * automatically created on first access and removed when players disconnect.</p>
+ */
 public class PlayerCache {
 
     private static final Map<UUID, PlayerIdentifier> cachedIdentifiers = new HashMap<>();

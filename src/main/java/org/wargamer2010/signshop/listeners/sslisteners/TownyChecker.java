@@ -11,6 +11,9 @@ import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.events.SSCreatedEvent;
 import org.wargamer2010.signshop.hooks.HookManager;
 
+/**
+ * Internal listener that enforces Towny's commercial plot requirement for shop creation unless bypassed.
+ */
 public class TownyChecker implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)

@@ -20,6 +20,15 @@ import java.util.TimerTask;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
+/**
+ * Manages timed operations and expiration for SignShop.
+ *
+ * <p>Tracks operations with time limits (e.g., runTimedCommand) and fires
+ * {@link SSExpiredEvent} when they expire. Persists state to timings.yml.</p>
+ *
+ * @see IExpirable
+ * @see SSExpiredEvent
+ */
 public class TimeManager extends TimerTask {
     private static final int interval = 1000; // in ms
     private static final int saveinterval = 10000;

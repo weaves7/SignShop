@@ -10,6 +10,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Manages protection plugin integrations (hooks) for SignShop.
+ *
+ * <p>Automatically detects and registers hooks for protection plugins like
+ * WorldGuard, Towny, GriefPrevention, Residence, Lands, LWC, and BlockLocker.
+ * Provides centralized permission checking across all registered hooks.</p>
+ *
+ * @see Hook
+ */
 public class HookManager {
     private static final HashMap<Hook, Plugin> hooks = new HashMap<>();
 

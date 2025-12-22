@@ -17,7 +17,42 @@ import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.*;
 
-
+/**
+ * Represents a single SignShop instance in the game world.
+ * <p>
+ * A Seller (shop) is the core data model for SignShop, containing all information about a physical shop
+ * including its owner, location, linked blocks, items, and configuration settings. Each shop is uniquely
+ * identified by its sign's Location.
+ * </p>
+ *
+ * <h2>Key Properties:</h2>
+ * <ul>
+ *   <li><b>Owner:</b> The player who created and owns this shop ({@link SignShopPlayer})</li>
+ *   <li><b>Sign Location:</b> The physical location of the shop's sign (primary identifier)</li>
+ *   <li><b>Containables:</b> Linked storage blocks (chests, barrels, etc.) that hold shop inventory</li>
+ *   <li><b>Activatables:</b> Linked interactive blocks (levers, buttons, etc.) triggered by shop operations</li>
+ *   <li><b>Items:</b> Template items defining what this shop trades (prices, stock, etc.)</li>
+ *   <li><b>Misc Properties:</b> Shop-specific configuration (price multipliers, messages, Trade shop templates, etc.)</li>
+ * </ul>
+ *
+ * <h2>Serialization Format:</h2>
+ * <ul>
+ *   <li><b>YAML Format:</b> Modern format (DataVersion 4+) using Bukkit's YAML serialization with Base64 NBT.</li>
+ *   <li><b>LEGACY Format:</b> Old format using Java object serialization. Used for backward compatibility
+ *       and for shops with incompatible items (e.g., player heads with empty names in Spigot 1.21.10+).</li>
+ * </ul>
+ *
+ * <h2>Transient Cache:</h2>
+ * <p>
+ * The {@code miscItemsCache} field provides performance optimization for Trade shops and other operations
+ * that frequently access deserialized items from misc properties. Items are cached in memory after first
+ * deserialization, avoiding repeated YAML parsing overhead (1-5ms per deserialization).
+ * </p>
+ *
+ * @see org.wargamer2010.signshop.data.Storage
+ * @see org.wargamer2010.signshop.util.DataConverter
+ * @see org.wargamer2010.signshop.incompatibility.IncompatibilityChecker
+ */
 public class Seller {
     private List<Block> containables;
     private List<Block> activatables;

@@ -7,6 +7,10 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Expirable command that executes after a configured delay.
+ * Stores command type and message placeholders for delayed execution.
+ */
 public class TimedCommand implements IExpirable {
     private String ShopType;
     private String CommandType;

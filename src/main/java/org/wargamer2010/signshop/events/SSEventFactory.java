@@ -10,6 +10,45 @@ import org.wargamer2010.signshop.operations.SignShopArguments;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 import org.wargamer2010.signshop.timing.IExpirable;
 
+/**
+ * Factory class for creating SignShop internal events.
+ *
+ * <p>Provides static factory methods that convert {@link SignShopArguments} context into
+ * specific event objects. This centralizes event construction and ensures consistent
+ * data population across all event types.</p>
+ *
+ * <h2>Event Types Created:</h2>
+ * <ul>
+ *   <li>{@link SSCreatedEvent} - Fired when a new shop is created</li>
+ *   <li>{@link SSPreTransactionEvent} - Fired before transaction execution (cancellable)</li>
+ *   <li>{@link SSPostTransactionEvent} - Fired after successful transaction</li>
+ *   <li>{@link SSMoneyTransactionEvent} - Fired for money operations (check balance, transfer)</li>
+ *   <li>{@link SSLinkEvent} - Fired when blocks are linked to a shop</li>
+ *   <li>{@link SSDestroyedEvent} - Fired when a shop is destroyed</li>
+ *   <li>{@link SSExpiredEvent} - Fired when timed operations expire</li>
+ * </ul>
+ *
+ * <h2>Transaction Event Flow:</h2>
+ * <pre>
+ * Player uses shop
+ *     ↓
+ * generatePreTransactionEvent() → SSPreTransactionEvent (cancellable)
+ *     ↓ (if not cancelled)
+ * Operations execute, generateMoneyEvent() for money ops
+ *     ↓
+ * generatePostTransactionEvent() → SSPostTransactionEvent
+ * </pre>
+ *
+ * <h2>Usage:</h2>
+ * <pre>
+ * SSPreTransactionEvent event = SSEventFactory.generatePreTransactionEvent(ssArgs, seller, action, true);
+ * SignShop.scheduleEvent(event);
+ * if (event.isCancelled()) return;
+ * </pre>
+ *
+ * @see SignShopArguments
+ * @see SSEvent
+ */
 public class SSEventFactory {
 
     private SSEventFactory() {

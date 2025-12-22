@@ -5,6 +5,20 @@ import org.wargamer2010.signshop.events.SSMoneyEventType;
 import org.wargamer2010.signshop.operations.SignShopArguments;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 
+/**
+ * Price modifier that rounds transaction amounts to prevent exploit opportunities.
+ *
+ * <p>Applies smart rounding based on transaction direction:</p>
+ * <ul>
+ *   <li><b>Player pays:</b> Rounds UP to prevent underpayment exploits</li>
+ *   <li><b>Player receives:</b> Rounds DOWN to prevent overpayment exploits</li>
+ * </ul>
+ *
+ * <p>All amounts are rounded to two decimal places (cents).</p>
+ *
+ * @see MoneyModifierManager
+ * @see IMoneyModifier
+ */
 public class RoundPriceModifier implements IMoneyModifier {
 
     @Override

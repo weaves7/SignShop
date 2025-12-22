@@ -7,6 +7,10 @@ import org.wargamer2010.signshop.events.SSMoneyRequestType;
 import org.wargamer2010.signshop.events.SSMoneyTransactionEvent;
 import org.wargamer2010.signshop.util.economyUtil;
 
+/**
+ * Operation that deposits money into the shop owner's account.
+ * Used in buy shops where customer payments go to the shop owner.
+ */
 public class giveOwnerMoney implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

@@ -5,6 +5,10 @@ import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.Date;
 
+/**
+ * Operation that restricts shop usage to one time per player.
+ * Stores player metadata to prevent repeated use of one-time shops like starter kits.
+ */
 public class oneTime implements SignShopOperation {
 
     @Override

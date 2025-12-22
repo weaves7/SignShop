@@ -4,6 +4,9 @@ import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.itemUtil;
 
+/**
+ * Shop operation that takes the item currently held in the player's hand.
+ */
 public class takeItemInHand implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

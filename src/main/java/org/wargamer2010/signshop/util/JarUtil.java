@@ -14,6 +14,10 @@ import java.net.URLClassLoader;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
+/**
+ * Utility for dynamically loading JAR files at runtime.
+ * Used for optional dependencies like database drivers.
+ */
 public class JarUtil {
     private static final ReentrantLock loadLocker = new ReentrantLock();
 

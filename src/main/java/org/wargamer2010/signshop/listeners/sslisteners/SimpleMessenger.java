@@ -9,6 +9,12 @@ import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.events.SSCreatedEvent;
 import org.wargamer2010.signshop.events.SSPostTransactionEvent;
 
+/**
+ * Sends transaction messages to players.
+ *
+ * <p>Responds to creation and transaction events to send configured
+ * messages with item hover tooltips and price information.</p>
+ */
 public class SimpleMessenger implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)

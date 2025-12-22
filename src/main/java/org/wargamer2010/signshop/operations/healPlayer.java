@@ -1,5 +1,9 @@
 package org.wargamer2010.signshop.operations;
 
+/**
+ * Operation that restores player health to maximum (20 HP).
+ * Commonly used in healing shops with payment requirement.
+ */
 public class healPlayer implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

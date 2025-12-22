@@ -21,6 +21,57 @@ import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.*;
 
+/**
+ * Mutable context container passed through the SignShop operation pipeline.
+ *
+ * <p>SignShopArguments is the central data object for all shop operations. It carries
+ * transaction state through the three operation phases: {@code setupOperation},
+ * {@code checkRequirements}, and {@code runOperation}. Each operation can read and
+ * modify values, enabling complex multi-operation workflows.</p>
+ *
+ * <h2>Operation Pipeline:</h2>
+ * <pre>
+ * Player clicks shop sign
+ *     ↓
+ * SignShopArguments created with initial values
+ *     ↓
+ * For each operation in config:
+ *   1. setupOperation(ssArgs) - Shop creation phase
+ *   2. checkRequirements(ssArgs, true) - Validation phase
+ *   3. runOperation(ssArgs) - Execution phase
+ *     ↓
+ * Transaction complete
+ * </pre>
+ *
+ * <h2>Argument Types ({@link SignShopArgumentsType}):</h2>
+ * <ul>
+ *   <li><b>Setup:</b> Creating a new shop (linking sign to chests)</li>
+ *   <li><b>Check:</b> Validating transaction requirements (money, stock, permissions)</li>
+ *   <li><b>Run:</b> Executing the actual transaction (transfer items, money)</li>
+ * </ul>
+ *
+ * <h2>Root vs Current Values:</h2>
+ * <p>Uses {@link SignShopArgument} wrapper with root/current value pattern:
+ * <ul>
+ *   <li><b>Root:</b> Original value set at creation, preserved across {@link #reset()}</li>
+ *   <li><b>Current:</b> Modified value, may change during operation execution</li>
+ * </ul>
+ * This enables operations to modify values temporarily while preserving originals.</p>
+ *
+ * <h2>Message Parts:</h2>
+ * <p>The {@code messageParts} map stores values for message template substitution.
+ * Operations populate this for error messages and transaction confirmations.
+ * Example: {@code %price%, %itemname%, %amount%}</p>
+ *
+ * <h2>Misc Settings:</h2>
+ * <p>The {@code miscSettings} map stores shop-specific configuration (e.g., Trade shop
+ * items, price multipliers, custom messages). Persisted to sellers.yml.</p>
+ *
+ * @see SignShopOperation
+ * @see SignShopArgumentsType
+ * @see SignShopArgument
+ * @see IMessagePartContainer
+ */
 public class SignShopArguments implements IMessagePartContainer {
     public static String separator = "~";
     public Map<String, String> miscSettings = new HashMap<>();

@@ -9,6 +9,9 @@ import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.Vault;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 
+/**
+ * Listener that notifies server operators about Vault and Essentials configuration issues on player login.
+ */
 public class SignShopLoginListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onPluginEnabled(PlayerJoinEvent event) {

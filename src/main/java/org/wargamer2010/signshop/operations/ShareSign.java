@@ -12,6 +12,9 @@ import org.wargamer2010.signshop.util.signshopUtil;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Shop operation that registers share signs for profit splitting among multiple players.
+ */
 public class ShareSign implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

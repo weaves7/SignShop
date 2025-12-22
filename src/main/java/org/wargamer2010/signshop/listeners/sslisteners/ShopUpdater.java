@@ -11,6 +11,9 @@ import org.wargamer2010.signshop.events.SSCreatedEvent;
 import org.wargamer2010.signshop.events.SSTouchShopEvent;
 import org.wargamer2010.signshop.util.itemUtil;
 
+/**
+ * Internal listener that updates sign colors based on stock status when shops are created or touched.
+ */
 public class ShopUpdater implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)

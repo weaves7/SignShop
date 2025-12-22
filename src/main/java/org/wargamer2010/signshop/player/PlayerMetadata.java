@@ -13,6 +13,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
+/**
+ * Persistent metadata storage for SignShop players.
+ *
+ * <p>Stores player-specific data (e.g., tutorial dismissals, one-time shop usage)
+ * in a SQLite database (player.db). Data persists across server restarts.</p>
+ */
 public class PlayerMetadata {
     private static final String filename = "player.db";
     private final SignShopPlayer ssPlayer;

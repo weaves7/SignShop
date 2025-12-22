@@ -5,7 +5,6 @@ import org.bukkit.inventory.ItemStack;
 /**
  * Wrapper for ItemStack arrays in message parts that provides lazy string conversion
  * and caching for efficient message processing with hover tooltips.
- *
  * This class allows the same items to be converted to both strings (for cooldown keys
  * and command placeholders) and components (for rich chat messages with hover events)
  * without duplicate computation.

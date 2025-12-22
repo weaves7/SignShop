@@ -2,6 +2,12 @@ package org.wargamer2010.signshop.operations;
 
 import java.util.Collection;
 
+/**
+ * Generic wrapper for SignShopArguments fields supporting root and special values.
+ * Used to differentiate between original values and values modified during operations.
+ *
+ * @param <E> the type of value being wrapped
+ */
 public class SignShopArgument<E> {
     private E inner;
     private E special;

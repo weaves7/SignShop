@@ -7,6 +7,9 @@ import org.wargamer2010.signshop.events.SSMoneyRequestType;
 import org.wargamer2010.signshop.events.SSMoneyTransactionEvent;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 
+/**
+ * Internal listener that handles default money transactions between players and shop owners using Vault economy.
+ */
 public class DefaultMoneyTransaction implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onSSMoneyTransaction(SSMoneyTransactionEvent event) {

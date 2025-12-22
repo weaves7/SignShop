@@ -12,6 +12,12 @@ import org.wargamer2010.signshop.util.itemUtil;
 
 import java.util.List;
 
+/**
+ * Updates shop sign colors based on stock availability.
+ *
+ * <p>When a shop owner left-clicks their shop, this listener checks if the
+ * shop is stocked and updates the sign color (blue = stocked, red = out of stock).</p>
+ */
 public class StockChecker implements Listener {
     
     @EventHandler(priority = EventPriority.MONITOR)

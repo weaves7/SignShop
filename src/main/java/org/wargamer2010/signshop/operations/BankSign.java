@@ -11,6 +11,9 @@ import org.wargamer2010.signshop.util.signshopUtil;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Shop operation that registers bank signs for routing profits to external accounts.
+ */
 public class BankSign implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

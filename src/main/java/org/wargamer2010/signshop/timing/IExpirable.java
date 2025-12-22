@@ -3,6 +3,9 @@ package org.wargamer2010.signshop.timing;
 
 import java.util.Map;
 
+/**
+ * Interface for operations that expire after a set time.
+ */
 public interface IExpirable {
     /**
      * Gets the name of the Expirable

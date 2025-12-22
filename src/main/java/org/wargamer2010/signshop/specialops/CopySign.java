@@ -22,6 +22,10 @@ import org.wargamer2010.signshop.util.signshopUtil;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Special operation that copies sign text and shop configuration from one sign to another.
+ * Allows shop owners to quickly modify shop type, price, or item descriptions without recreating the shop.
+ */
 public class CopySign implements SignShopSpecialOp {
     @Override
     public Boolean runOperation(List<Block> clickedBlocks, PlayerInteractEvent event, Boolean ranSomething) {

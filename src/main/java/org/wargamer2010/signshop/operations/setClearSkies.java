@@ -4,6 +4,9 @@ import org.bukkit.World;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 
+/**
+ * Shop operation that clears the weather in the world.
+ */
 public class setClearSkies implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

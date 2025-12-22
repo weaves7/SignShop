@@ -15,6 +15,10 @@ import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.Map;
 
+/**
+ * Command handler for /signshop unlink.
+ * Removes block associations from shops at specified coordinates or cuboid regions.
+ */
 public class UnlinkHandler implements ICommandHandler {
     private static final ICommandHandler instance = new UnlinkHandler();
 

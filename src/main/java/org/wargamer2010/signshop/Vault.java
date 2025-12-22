@@ -10,6 +10,16 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 
 import java.util.logging.Level;
 
+/**
+ * Integration layer for Vault API providing economy and permissions.
+ *
+ * <p>SignShop requires Vault as a hard dependency for all money operations
+ * and permission checks. This class initializes and provides access to
+ * Vault's Economy, Permission, and Chat services.</p>
+ *
+ * @see net.milkbowl.vault.economy.Economy
+ * @see net.milkbowl.vault.permission.Permission
+ */
 public class Vault {
     private static Permission permission = null;
     private static Economy economy = null;

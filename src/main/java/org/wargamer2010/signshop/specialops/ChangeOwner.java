@@ -14,6 +14,10 @@ import org.wargamer2010.signshop.util.clicks;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Special operation that transfers shop ownership to another player.
+ * Requires the new owner to be in the clickmap and appropriate permissions for the current owner.
+ */
 public class ChangeOwner implements SignShopSpecialOp {
     @Override
     public Boolean runOperation(List<Block> clickedBlocks, PlayerInteractEvent event, Boolean ranSomething) {

@@ -5,6 +5,9 @@ import org.wargamer2010.signshop.timing.TimedCommand;
 
 import java.util.logging.Level;
 
+/**
+ * Shop operation that schedules delayed command execution from config.yml after a specified time period.
+ */
 public class runTimedCommand implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

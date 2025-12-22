@@ -4,6 +4,9 @@ import org.bukkit.World;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 
+/**
+ * Shop operation that sets the world time to day (time 0).
+ */
 public class setDayTime implements SignShopOperation {    
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

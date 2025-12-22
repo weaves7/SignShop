@@ -14,6 +14,9 @@ import org.wargamer2010.signshop.util.itemUtil;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Shop operation that plays music discs from the shop chest in sequence.
+ */
 public class playJukebox implements SignShopOperation {
     private ItemStack[] getRecords(List<Block> containables) {
         List<ItemStack> tempItems = new ArrayList<>();

@@ -12,6 +12,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.hooks.HookManager;
+import org.wargamer2010.signshop.operations.SignShopArguments;
 import org.wargamer2010.signshop.operations.SignShopOperation;
 import org.wargamer2010.signshop.operations.SignShopOperationListItem;
 import org.wargamer2010.signshop.operations.runCommand;
@@ -26,6 +27,47 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.logging.Level;
 
+/**
+ * Central configuration manager for SignShop plugin.
+ *
+ * <p>Loads and manages all configuration from config.yml, language files, and operation
+ * definitions. Provides access to settings, messages, and the compiled operation cache
+ * that powers the shop system.</p>
+ *
+ * <h2>Key Responsibilities:</h2>
+ * <ul>
+ *   <li><b>Configuration:</b> Loads config.yml settings (distances, limits, toggles)</li>
+ *   <li><b>Languages:</b> Loads message files (en_US.yml, etc.) with template support</li>
+ *   <li><b>Operations:</b> Registers and caches operation instances for all sign types</li>
+ *   <li><b>Permissions:</b> Manages shop limits, price multipliers, blacklists</li>
+ * </ul>
+ *
+ * <h2>Operation Registration:</h2>
+ * <p>At startup, parses the {@code signs:} section of config.yml to build operation lists.
+ * Each sign type (e.g., Buy, Sell, Trade) maps to a list of operations:</p>
+ * <pre>
+ * signs:
+ *   Buy:
+ *     - takePlayerMoney
+ *     - giveShopItems
+ *     - giveOwnerMoney
+ *     - updateSign
+ * </pre>
+ * <p>Operations are loaded via reflection from {@code org.wargamer2010.signshop.operations}
+ * and cached in {@link #compiledOperations} for fast lookup during transactions.</p>
+ *
+ * <h2>Message Templates:</h2>
+ * <p>Supports message templates with placeholders (e.g., {@code %price%}, {@code %itemname%}).
+ * Placeholders are populated from {@link SignShopArguments#messageParts} at runtime.</p>
+ *
+ * <h2>External Operations:</h2>
+ * <p>Third-party plugins can register custom operations via
+ * {@link #registerExternalOperation(SignShopOperation)} for integration.</p>
+ *
+ * @see SignShopOperation
+ * @see SignShopOperationListItem
+ * @see SignShopArguments
+ */
 public class SignShopConfig {
     public static final String CONFIG_FILENAME = "config.yml";
     private final String defaultOPPackage = "org.wargamer2010.signshop.operations";

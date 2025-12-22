@@ -6,6 +6,9 @@ import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.itemUtil;
 
+/**
+ * Shop operation that removes items from shop chests for transactions.
+ */
 public class takeShopItems implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

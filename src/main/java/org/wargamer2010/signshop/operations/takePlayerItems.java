@@ -6,6 +6,10 @@ import org.wargamer2010.signshop.player.SignShopPlayer;
 import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.itemUtil;
 
+/**
+ * Shop operation that removes items from a player's inventory.
+ * Used in sell shops and trade shops where players give items.
+ */
 public class takePlayerItems implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

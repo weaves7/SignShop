@@ -9,6 +9,12 @@ import org.wargamer2010.signshop.player.SignShopPlayer;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Event fired when a new SignShop is created.
+ *
+ * <p>Cancelling this event prevents the shop from being created. Listeners can
+ * modify price, items, or misc settings before creation is finalized.</p>
+ */
 public class SSCreatedEvent extends SSEvent {
     private static final HandlerList handlers = new HandlerList();
 

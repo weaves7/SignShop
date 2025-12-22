@@ -13,6 +13,9 @@ import org.wargamer2010.signshop.util.itemUtil;
 
 import java.util.Map;
 
+/**
+ * Internal listener that blocks blacklisted items from being used in shop creation and transactions.
+ */
 public class SimpleBlacklister implements Listener {
 
     private boolean runBlacklistCheck(ItemStack[] isItems, SignShopPlayer ssPlayer, Map<String, Object> messageParts) {

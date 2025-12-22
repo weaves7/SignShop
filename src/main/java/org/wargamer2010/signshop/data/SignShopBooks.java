@@ -11,6 +11,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
+/**
+ * Persistence layer for book contents in SignShop.
+ *
+ * <p>Stores and retrieves written book data in a SQLite database (books.db).
+ * This allows shops selling written books to preserve their content across
+ * server restarts without storing large text in sellers.yml.</p>
+ */
 public class SignShopBooks {
     private static final char pageSeperator = (char)3;
     private static final String filename = "books.db";

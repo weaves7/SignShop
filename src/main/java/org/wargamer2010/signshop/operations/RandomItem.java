@@ -7,6 +7,10 @@ import org.wargamer2010.signshop.util.itemUtil;
 
 import java.util.Random;
 
+/**
+ * Shop operation that randomly selects one item from the shop chest to give.
+ * Used for gambling-style shops like slot machines.
+ */
 public class RandomItem implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

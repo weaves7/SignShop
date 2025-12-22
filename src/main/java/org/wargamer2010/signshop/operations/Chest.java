@@ -16,6 +16,10 @@ import java.util.logging.Level;
 
 import static org.wargamer2010.signshop.operations.SignShopArguments.separator;
 
+/**
+ * Operation that selects a specific numbered chest for multi-chest shop configurations.
+ * Allows Trade shops to use separate chests for different item sets (Chest{1}, Chest{2}).
+ */
 public class Chest implements SignShopOperation {
     private Boolean incorrectPar(SignShopArguments ssArgs) {
         ssArgs.getPlayer().get().sendMessage(SignShop.getInstance().getSignShopConfig().getError("could_not_complete_operation", null));
