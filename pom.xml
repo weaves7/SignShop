@@ -6,7 +6,7 @@
 
     <groupId>org.wargamer2010</groupId>
     <artifactId>SignShop</artifactId>
-    <version>5.1.0-mod</version>
+    <version>5.2.0</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
