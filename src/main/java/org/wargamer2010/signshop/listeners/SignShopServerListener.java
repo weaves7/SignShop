@@ -8,6 +8,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.plugin.Plugin;
 
+/**
+ * Listener that detects Essentials plugin and checks for sign conflicts on server startup and plugin enable.
+ */
 public class SignShopServerListener implements Listener {
     private final Server server;
     private static final String pluginName = "Essentials";

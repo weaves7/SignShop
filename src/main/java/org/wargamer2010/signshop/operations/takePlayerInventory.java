@@ -2,6 +2,9 @@ package org.wargamer2010.signshop.operations;
 
 import org.bukkit.entity.Player;
 
+/**
+ * Shop operation that clears the player's inventory, optionally including armor.
+ */
 public class takePlayerInventory implements SignShopOperation {    
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {        

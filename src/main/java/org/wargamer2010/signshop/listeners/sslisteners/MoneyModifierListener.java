@@ -8,6 +8,9 @@ import org.wargamer2010.signshop.events.SSMoneyTransactionEvent;
 import org.wargamer2010.signshop.money.MoneyModifierManager;
 import org.wargamer2010.signshop.util.economyUtil;
 
+/**
+ * Internal listener that applies price modifiers to money transactions before execution.
+ */
 public class MoneyModifierListener implements Listener {
     @EventHandler(priority = EventPriority.LOW)
     public void onSSMoneyTransactionEvent(SSMoneyTransactionEvent event) {

@@ -11,6 +11,9 @@ import org.wargamer2010.signshop.player.SignShopPlayer;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Event fired after a successful shop transaction.
+ */
 public class SSPostTransactionEvent extends SSPreTransactionEvent {
     private static final HandlerList handlers = new HandlerList();
 
@@ -22,7 +25,7 @@ public class SSPostTransactionEvent extends SSPreTransactionEvent {
                                 SignShopPlayer pOwner,
                                 Block pSign,
                                 String pOperation,
-                                Map<String, String> pMessageParts,
+                                Map<String, Object> pMessageParts,
                                 Seller pShop,
                                 Action pAction,
                                 boolean pRequirementsOK) {

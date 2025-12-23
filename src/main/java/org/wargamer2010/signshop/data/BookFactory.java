@@ -1,8 +1,11 @@
 
-package org.wargamer2010.signshop.blocks;
+package org.wargamer2010.signshop.data;
 
 import org.bukkit.inventory.meta.BookMeta;
 
+/**
+ * Factory for creating IBookItem instances from ItemStacks.
+ */
 public class BookFactory {
     private BookFactory() {
 

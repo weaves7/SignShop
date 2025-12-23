@@ -173,8 +173,9 @@ public class VirtualInventory {
 
     private int findSpace(ItemStack item, Map<Integer, StackWithAmount> lookaside, boolean findEmpty) {
         // 1.9.4 and later extend living entity slots beyond 36, but some of these are read-only.
-        // We could use .getStorageContents(), but this breaks 1.8.8 compatibility
-        int length = (inventory.getHolder() instanceof HumanEntity) ? 36 : inventory.getSize(); //TODO get rid of calls to getHolder and getItemMeta where possible, due to excessive copying fo the data
+        // Performance note: getHolder() creates defensive copies of inventory data.
+        // This is called frequently during item checks. Consider caching if profiling shows impact.
+        int length = (inventory.getHolder() instanceof HumanEntity) ? 36 : inventory.getSize();
         @SuppressWarnings("MismatchedReadAndWriteOfArray") ItemStack[] stacks = Arrays.copyOfRange(inventory.getContents(), 0, length);
 
         if (item == null) {

@@ -5,6 +5,9 @@ import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
+/**
+ * GriefPrevention integration hook that checks build permissions in claimed land.
+ */
 public class GriefPreventionHook implements Hook {
 
     @Override

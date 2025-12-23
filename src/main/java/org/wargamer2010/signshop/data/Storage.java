@@ -1,4 +1,4 @@
-package org.wargamer2010.signshop.configuration;
+package org.wargamer2010.signshop.data;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -16,6 +16,8 @@ import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.Seller;
 import org.wargamer2010.signshop.SignShop;
+import org.wargamer2010.signshop.configuration.FileSaveWorker;
+import org.wargamer2010.signshop.configuration.configUtil;
 import org.wargamer2010.signshop.player.PlayerIdentifier;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 import org.wargamer2010.signshop.util.itemUtil;
@@ -27,6 +29,49 @@ import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 
+/**
+ * Data persistence layer for all SignShop shops (Seller objects).
+ * <p>
+ * This class manages loading, saving, and accessing shop data from the sellers.yml file.
+ * It uses a singleton pattern and must be initialized via {@link #init(File)} before use.
+ * Access the singleton instance via {@link #get()}.
+ * </p>
+ *
+ * <h2>Key Features:</h2>
+ * <ul>
+ *   <li><b>Singleton Pattern:</b> Single instance manages all shop data in memory</li>
+ *   <li><b>sellers.yml Format:</b> YAML file storing all shop configurations with sections:
+ *     <ul>
+ *       <li>sellers - Active shops successfully loaded</li>
+ *       <li>deferred_sellers - Shops waiting for their world to load</li>
+ *       <li>invalid_sellers - Shops that failed validation (for debugging)</li>
+ *       <li>DataVersion - Format version for migration support</li>
+ *     </ul>
+ *   </li>
+ *   <li><b>Deferred Loading:</b> Shops in unloaded worlds are automatically loaded when the world loads via {@link WorldLoadEvent}</li>
+ *   <li><b>Async File Saving:</b> Uses {@link FileSaveWorker} to save sellers.yml asynchronously, preventing main thread blocking</li>
+ *   <li><b>Validation:</b> On startup, validates all shops (sign exists, world loaded, etc.) and removes invalid ones with backups</li>
+ *   <li><b>Thread Safety:</b> Shop data (sellers map) is accessed on main thread. File I/O is async via FileSaveWorker.</li>
+ * </ul>
+ *
+ * <h2>Deferred Loading System:</h2>
+ * <p>
+ * When a shop's world is not loaded at startup (e.g., dynamic dungeon worlds, multiworld plugins),
+ * the shop is stored in {@code deferredSellers} and automatically loaded when a {@link WorldLoadEvent}
+ * occurs for that world. This prevents shop loss for worlds that load after the plugin.
+ * </p>
+ *
+ * <h2>Threading Considerations:</h2>
+ * <ul>
+ *   <li>All shop data access (add, remove, get) happens on the main thread</li>
+ *   <li>{@link #Save()} serializes shop data on main thread, then queues async file write</li>
+ *   <li>{@link FileSaveWorker} runs on async thread and handles actual disk I/O</li>
+ * </ul>
+ *
+ * @see Seller
+ * @see FileSaveWorker
+ * @see org.wargamer2010.signshop.util.DataConverter
+ */
 public class Storage implements Listener {
     private final File ymlfile;
     private final LinkedBlockingQueue<FileConfiguration> saveQueue = new LinkedBlockingQueue<>();
@@ -147,7 +192,7 @@ public class Storage implements Listener {
                 storageEx.setReason(StorageExceptionReason.EMPTY_WORLD_STRING);
                 throw storageEx;
             }
-            seller_shopworld = tempList.get(0);
+            seller_shopworld = tempList.getFirst();
             storageEx.setWorld(seller_shopworld);
             if(Bukkit.getServer().getWorld(seller_shopworld) == null) {
                 storageEx.setReason(StorageExceptionReason.NULL_WORLD);
@@ -158,7 +203,7 @@ public class Storage implements Listener {
                 storageEx.setReason(StorageExceptionReason.EMPTY_OWNER_STRING);
                 throw storageEx;
             }
-            seller_owner = PlayerIdentifier.getPlayerFromString(tempList.get(0));
+            seller_owner = PlayerIdentifier.getPlayerFromString(tempList.getFirst());
             if(seller_owner == null){
                 storageEx.setReason(StorageExceptionReason.NULL_OWNER);
                 throw storageEx;
@@ -172,7 +217,7 @@ public class Storage implements Listener {
             World world = Bukkit.getServer().getWorld(seller_shopworld);
 
             try {
-                seller_sign = signshopUtil.convertStringToLocation(tempList.get(0), world).getBlock();
+                seller_sign = signshopUtil.convertStringToLocation(tempList.getFirst(), world).getBlock();
             } catch(Exception ex) {
                 SignShop.log("Caught an unexpected exception: " + ex.getMessage(), Level.WARNING);
                 // May have caught a FileNotFoundException originating from the chunkloader
@@ -195,7 +240,7 @@ public class Storage implements Listener {
                 }
             }
         } catch(StorageException caughtex) {
-            SignShop.getInstance().debugMessage("StorageException Reason: "+caughtex.getReason());
+            SignShop.getInstance().debugClassMessage("StorageException Reason: "+caughtex.getReason(),"Storage");
             if(caughtex.getReason() == StorageExceptionReason.NULL_WORLD){
                 deferredSellers.put(key, sellerSettings);
                 return false; // World may not even be loaded for this startup. May be loaded by a plugin later, or future startup.
@@ -211,9 +256,9 @@ public class Storage implements Listener {
 
             try {
                 SignShop.log(getInvalidError(
-                        SignShop.getInstance().getSignShopConfig().getError("shop_removed", null), getSetting(sellerSettings, "sign").get(0), getSetting(sellerSettings, "shopworld").get(0)), Level.INFO);
+                        SignShop.getInstance().getSignShopConfig().getError("shop_removed", null), getSetting(sellerSettings, "sign").getFirst(), getSetting(sellerSettings, "shopworld").getFirst()), Level.INFO);
             } catch(StorageException lastex) {
-                SignShop.getInstance().debugMessage("StorageException Reason: "+caughtex.getReason());
+                SignShop.getInstance().debugClassMessage("StorageException Reason: "+caughtex.getReason(), "Storage");
                 SignShop.log(SignShop.getInstance().getSignShopConfig().getError("shop_removed", null), Level.INFO);
             }
             invalidShops.put(key, sellerSettings);
@@ -221,7 +266,7 @@ public class Storage implements Listener {
         }
 
         if (SignShop.getInstance().getSignShopConfig().ExceedsMaxChestsPerShop(seller_containables.size())) {
-            Map<String, String> parts = new LinkedHashMap<>();
+            Map<String, Object> parts = new LinkedHashMap<>();
             int x = seller_sign.getX();
             int y = seller_sign.getY();
             int z = seller_sign.getZ();
@@ -250,7 +295,7 @@ public class Storage implements Listener {
         tempSellers.putAll(configUtil.fetchHashmapInHashmapwithList("deferred_sellers",yml));
         if(tempSellers == null) {
             SignShop.log("Invalid sellers.yml format detected. Old sellers format is no longer supported."
-                    + " Visit http://tiny.cc/signshop for more information.",
+                    + " Visit https://tiny.cc/signshop for more information.",
                     Level.SEVERE);
             return false;
         }
@@ -263,6 +308,7 @@ public class Storage implements Listener {
 
         for(Map.Entry<String,HashMap<String,List<String>>> shopSettings : tempSellers.entrySet())
         {
+            SignShop.getInstance().debugClassMessage("Loading shop: "+ shopSettings.getKey(),"Storage");
             needSave = !loadSellerFromSettings(shopSettings.getKey(), shopSettings.getValue()) || needSave;
         }
 
@@ -343,6 +389,14 @@ public class Storage implements Listener {
         seller.setItems(isItems);
     }
 
+    public void updateSeller(Block bSign, List<Block> containables, List<Block> activatables, ItemStack[] isItems, Map<String, String> miscSettings) {
+        Seller seller = Storage.sellers.get(bSign.getLocation());
+        seller.setActivatables(activatables);
+        seller.setContainables(containables);
+        seller.setItems(isItems);
+        seller.setMiscSettings(miscSettings);
+    }
+
     public Seller getSeller(Location lKey){
         if(Storage.sellers.containsKey(lKey))
             return Storage.sellers.get(lKey);
@@ -354,7 +408,7 @@ public class Storage implements Listener {
     }
 
     /**
-     * The Seller now keeps its own Sign Location so call getSign in stead
+     * The Seller now keeps its own Sign Location so call getSign instead
      * @param pSeller
      * @return
      * @deprecated
@@ -420,14 +474,17 @@ public class Storage implements Listener {
         return itemSeperator;
     }
 
-    private void copyFile(File in, File out) throws IOException
-    {
-        try (FileChannel inChannel = new FileInputStream(in).getChannel(); FileChannel outChannel = new FileOutputStream(out).getChannel()) {
+    private void copyFile(File in, File out) throws IOException {
+        try (FileInputStream fis = new FileInputStream(in);
+             FileOutputStream fos = new FileOutputStream(out);
+             FileChannel inChannel = fis.getChannel();
+             FileChannel outChannel = fos.getChannel()) {
             inChannel.transferTo(0, inChannel.size(), outChannel);
         }
     }
 
     private static class StorageException extends Exception {
+        @Serial
         private static final long serialVersionUID = 1L;
         private String world = "";
         private StorageExceptionReason exceptionReason = StorageExceptionReason.UNDEFINED;

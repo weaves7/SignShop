@@ -7,7 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.wargamer2010.signshop.Seller;
 import org.wargamer2010.signshop.SignShop;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.player.PlayerCache;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 import org.wargamer2010.signshop.util.itemUtil;
@@ -16,6 +16,10 @@ import org.wargamer2010.signshop.util.signshopUtil;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Special operation that links restricted, share, or bank signs to a shop.
+ * These special signs modify shop behavior by restricting access, sharing ownership, or connecting to town banks.
+ */
 public class LinkSpecialSign implements SignShopSpecialOp {
     @Override
     public Boolean runOperation(List<Block> clickedBlocks, PlayerInteractEvent event, Boolean ranSomething) {

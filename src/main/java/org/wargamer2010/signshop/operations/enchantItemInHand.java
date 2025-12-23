@@ -14,6 +14,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
+/**
+ * Shop operation that applies enchantments from enchanted books in shop chest to the player's held item.
+ */
 public class enchantItemInHand implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

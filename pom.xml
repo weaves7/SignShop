@@ -6,21 +6,21 @@
 
     <groupId>org.wargamer2010</groupId>
     <artifactId>SignShop</artifactId>
-    <version>4.0.0</version>
+    <version>5.2.0</version>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <repositories>
         <repository>
-            <id>spigot-repo</id>
-            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+            <id>MineVolt</id>
+            <url>https://minevolt.net/repo/</url>
         </repository>
         <repository>
-            <id>paper-repo</id>
-            <url>https://papermc.io/repo/repository/maven-public/</url>
+            <id>spigot-repo</id>
+            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
         <repository>
             <id>codemc-repo</id>
@@ -42,12 +42,20 @@
             <id>essentials-releases</id>
             <url>https://repo.essentialsx.net/releases/</url>
         </repository>
+        <repository>
+            <id>glaremasters repo</id>
+            <url>https://repo.glaremasters.me/repository/towny/</url>
+        </repository>
+        <repository>
+            <id>MikeRepo</id>
+            <url>https://repo.mikeprimm.com/</url>
+        </repository>
     </repositories>
     <dependencies>
         <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.20.1-R0.1-SNAPSHOT</version>
+            <version>1.21-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -59,13 +67,13 @@
         <dependency>
             <groupId>com.github.MilkBowl</groupId>
             <artifactId>VaultAPI</artifactId>
-            <version>431c5273c2</version>
+            <version>1.7</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.github.TechFortress</groupId>
+            <groupId>com.github.GriefPrevention</groupId>
             <artifactId>GriefPrevention</artifactId>
-            <version>16.13.0</version>
+            <version>16.18.4</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -81,15 +89,15 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.palmergames.bukkit</groupId>
+            <groupId>com.palmergames.bukkit.towny</groupId>
             <artifactId>towny</artifactId>
-            <version>0.95.1.0-1.13.2</version>
+            <version>0.100.3.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>world.bentobox</groupId>
             <artifactId>bentobox</artifactId>
-            <version>1.11.1</version>
+            <version>2.4.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -101,13 +109,13 @@
         <dependency>
             <groupId>com.earth2me</groupId>
             <artifactId>essentials</artifactId>
-            <version>2.17.1.0</version>
+            <version>2.22.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.dynmap.bukkit</groupId>
-            <artifactId>dynmap</artifactId>
-            <version>3.0-beta-10-257</version>
+            <groupId>us.dynmap</groupId>
+            <artifactId>DynmapCoreAPI</artifactId>
+            <version>3.7-beta-6</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -119,7 +127,7 @@
         <dependency>
             <groupId>com.Zrips</groupId>
             <artifactId>CMI-API</artifactId>
-            <version>9.0.0.0</version>
+            <version>9.7.14.3</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -147,10 +155,10 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>com.opencsv</groupId>
-            <artifactId>opencsv</artifactId>
-            <version>5.7.1</version>
-            <scope>test</scope>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.10.1</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
     <build>
@@ -170,7 +178,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.6.0</version>
                 <configuration>
                     <relocations>
                         <relocation>

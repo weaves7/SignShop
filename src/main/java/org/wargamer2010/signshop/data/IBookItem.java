@@ -1,8 +1,11 @@
 
-package org.wargamer2010.signshop.blocks;
+package org.wargamer2010.signshop.data;
 
 import org.bukkit.inventory.ItemStack;
 
+/**
+ * Interface for accessing written book metadata.
+ */
 public interface IBookItem {
     String[] getPages();
 

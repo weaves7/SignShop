@@ -6,6 +6,9 @@ import org.wargamer2010.signshop.util.CooldownUtil;
 
 import java.util.Date;
 
+/**
+ * Shop operation that enforces a per-player cooldown period before the shop can be used again.
+ */
 public class cooldown implements SignShopOperation {
 
     public long getCooldown(SignShopArguments ssArgs) {

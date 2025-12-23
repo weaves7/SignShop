@@ -16,6 +16,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
+/**
+ * Configuration file loading, parsing, and YAML manipulation utilities.
+ *
+ * <p>Provides methods for loading YAML configurations from the plugin folder or JAR,
+ * extracting nested data structures, and preserving comments during config updates.</p>
+ *
+ * <h2>Key Functionality:</h2>
+ * <ul>
+ *   <li><b>File Loading:</b> {@link #loadYMLFromPluginFolder} and {@link #loadYMLFromJar}</li>
+ *   <li><b>Nested Maps:</b> {@link #fetchHasmapInHashmap} for sign definitions</li>
+ *   <li><b>List Parsing:</b> {@link #fetchListInHashmap} for operation lists</li>
+ *   <li><b>Comment Preservation:</b> Automatically restores YAML comments when merging defaults</li>
+ * </ul>
+ *
+ * @see SignShopConfig
+ */
 public class configUtil {
     private configUtil() {
 

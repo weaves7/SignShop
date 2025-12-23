@@ -9,6 +9,12 @@ import org.wargamer2010.signshop.player.SignShopPlayer;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Event fired when a new SignShop is created.
+ *
+ * <p>Cancelling this event prevents the shop from being created. Listeners can
+ * modify price, items, or misc settings before creation is finalized.</p>
+ */
 public class SSCreatedEvent extends SSEvent {
     private static final HandlerList handlers = new HandlerList();
 
@@ -19,11 +25,11 @@ public class SSCreatedEvent extends SSEvent {
     private final SignShopPlayer ssPlayer;
     private final Block bSign;
     private final String sOperation;
-    private final Map<String, String> messageParts;
+    private final Map<String, Object> messageParts;
     private final Map<String, String> miscSettings;
 
 
-    public SSCreatedEvent(double pPrice, ItemStack[] pItems, List<Block> pContainables, List<Block> pActivatables, SignShopPlayer pPlayer, Block pSign, String pOperation, Map<String, String> pMessageParts, Map<String, String> pMisc) {
+    public SSCreatedEvent(double pPrice, ItemStack[] pItems, List<Block> pContainables, List<Block> pActivatables, SignShopPlayer pPlayer, Block pSign, String pOperation, Map<String, Object> pMessageParts, Map<String, String> pMisc) {
         fPrice = pPrice;
         isItems = pItems;
         containables = pContainables;
@@ -78,13 +84,23 @@ public class SSCreatedEvent extends SSEvent {
     }
 
     @Override
-    public Map<String, String> getMessageParts() {
+    public Map<String, Object> getMessageParts() {
         return messageParts;
     }
 
     @Override
-    public void setMessagePart(String part, String value) {
+    public void setMessagePart(String part, Object value) {
         messageParts.put(part, value);
+    }
+
+    /**
+     * Overloaded method for binary compatibility with external plugins.
+     *
+     * @param part The message part key
+     * @param value The string value
+     */
+    public void setMessagePart(String part, String value) {
+        setMessagePart(part, (Object) value);
     }
 
     public Map<String, String> getMiscSettings() {

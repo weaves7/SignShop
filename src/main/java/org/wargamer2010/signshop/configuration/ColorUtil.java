@@ -9,6 +9,9 @@ import org.wargamer2010.signshop.util.signshopUtil;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Utility for leather armor color name lookups.
+ */
 public class ColorUtil {
     private static final Map<Integer, String> colorLookup = new HashMap<>();
 

@@ -1,5 +1,8 @@
 package org.wargamer2010.signshop.configuration;
 
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
@@ -9,10 +12,12 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.hooks.HookManager;
+import org.wargamer2010.signshop.operations.SignShopArguments;
 import org.wargamer2010.signshop.operations.SignShopOperation;
 import org.wargamer2010.signshop.operations.SignShopOperationListItem;
 import org.wargamer2010.signshop.operations.runCommand;
 import org.wargamer2010.signshop.specialops.*;
+import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.economyUtil;
 import org.wargamer2010.signshop.util.itemUtil;
 import org.wargamer2010.signshop.util.signshopUtil;
@@ -22,6 +27,47 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.logging.Level;
 
+/**
+ * Central configuration manager for SignShop plugin.
+ *
+ * <p>Loads and manages all configuration from config.yml, language files, and operation
+ * definitions. Provides access to settings, messages, and the compiled operation cache
+ * that powers the shop system.</p>
+ *
+ * <h2>Key Responsibilities:</h2>
+ * <ul>
+ *   <li><b>Configuration:</b> Loads config.yml settings (distances, limits, toggles)</li>
+ *   <li><b>Languages:</b> Loads message files (en_US.yml, etc.) with template support</li>
+ *   <li><b>Operations:</b> Registers and caches operation instances for all sign types</li>
+ *   <li><b>Permissions:</b> Manages shop limits, price multipliers, blacklists</li>
+ * </ul>
+ *
+ * <h2>Operation Registration:</h2>
+ * <p>At startup, parses the {@code signs:} section of config.yml to build operation lists.
+ * Each sign type (e.g., Buy, Sell, Trade) maps to a list of operations:</p>
+ * <pre>
+ * signs:
+ *   Buy:
+ *     - takePlayerMoney
+ *     - giveShopItems
+ *     - giveOwnerMoney
+ *     - updateSign
+ * </pre>
+ * <p>Operations are loaded via reflection from {@code org.wargamer2010.signshop.operations}
+ * and cached in {@link #compiledOperations} for fast lookup during transactions.</p>
+ *
+ * <h2>Message Templates:</h2>
+ * <p>Supports message templates with placeholders (e.g., {@code %price%}, {@code %itemname%}).
+ * Placeholders are populated from {@link SignShopArguments#messageParts} at runtime.</p>
+ *
+ * <h2>External Operations:</h2>
+ * <p>Third-party plugins can register custom operations via
+ * {@link #registerExternalOperation(SignShopOperation)} for integration.</p>
+ *
+ * @see SignShopOperation
+ * @see SignShopOperationListItem
+ * @see SignShopArguments
+ */
 public class SignShopConfig {
     public static final String CONFIG_FILENAME = "config.yml";
     private final String defaultOPPackage = "org.wargamer2010.signshop.operations";
@@ -40,6 +86,7 @@ public class SignShopConfig {
     private Map<String, Integer> ShopLimits;
     private List<LinkableMaterial> LinkableMaterials;
     private Map<String, List<String>> Operations = new HashMap<>();
+    private Map<String, List<SignShopOperationListItem>> compiledOperations = new HashMap<>();
     private SignShop instance = null;
     //Configurables
     private FileConfiguration config;
@@ -72,6 +119,9 @@ public class SignShopConfig {
     private boolean UseBlacklistAsWhitelist = false;
     private boolean EnableWrittenBookFix = true;
     private boolean CachePrices = true;
+    private boolean ShowMaterialInCustomNames = true;
+    private boolean ShowItemDetailsInChat = true;
+    private boolean ShowItemHovers = true;
     private CommaDecimalSeparatorState AllowCommaDecimalSeparator = CommaDecimalSeparatorState.AUTO;
     private String ColorCode = "&";
     private String ChatPrefix = "&6[SignShop]";
@@ -86,6 +136,7 @@ public class SignShopConfig {
     private Material updateMaterial = Material.getMaterial("INK_SAC");
     private Material destroyMaterial = Material.getMaterial("GOLDEN_AXE");
     private Material inspectMaterial = Material.getMaterial("WRITABLE_BOOK");
+    private List<String> DebugClasses = new ArrayList<>();
 
 
     public SignShopConfig() {
@@ -156,6 +207,7 @@ public class SignShopConfig {
         setupHooks();
         setupSpecialsOps();
         setupLinkables();
+        setupDebugClasses();
     }
 
     public String getPreferredLanguage() {
@@ -254,6 +306,9 @@ public class SignShopConfig {
         UseBlacklistAsWhitelist = ymlThing.getBoolean("UseBlacklistAsWhitelist", UseBlacklistAsWhitelist);
         EnableWrittenBookFix = ymlThing.getBoolean("EnableWrittenBookFix", EnableWrittenBookFix);
         CachePrices = ymlThing.getBoolean("CachePrices", CachePrices);
+        ShowMaterialInCustomNames = ymlThing.getBoolean("ShowMaterialInCustomNames", ShowMaterialInCustomNames);
+        ShowItemDetailsInChat = ymlThing.getBoolean("ShowItemDetailsInChat", ShowItemDetailsInChat);
+        ShowItemHovers = ymlThing.getBoolean("ShowItemHovers", ShowItemHovers);
         AllowCommaDecimalSeparator = CommaDecimalSeparatorState.fromName(ymlThing.getString("AllowCommaDecimalSeparator", AllowCommaDecimalSeparator.name));
         ColorCode = ymlThing.getString("ColorCode", ColorCode);
         ChatPrefix = ymlThing.getString("ChatPrefix", ChatPrefix);
@@ -361,7 +416,7 @@ public class SignShopConfig {
 
             for (String tempOperationString : allSignOperations.get(sKey).split("(,(?![^{]*}))")) { //Matches commas outside curly braces
                 List<String> bits = signshopUtil.getParameters(tempOperationString.trim());
-                String op = bits.get(0);
+                String op = bits.getFirst();
                 Object opinstance = getInstance(packageName + "." + op.trim());
                 if (opinstance == null) // Retry with default package
                     opinstance = getInstance(defaultOPPackage + "." + op.trim());
@@ -407,6 +462,24 @@ public class SignShopConfig {
                     }
 
                 }
+            }
+        }
+
+        // Build compiled operations cache for performance
+        buildCompiledOperationsCache();
+    }
+
+    /**
+     * Builds a cache of compiled operation lists for performance optimization.
+     * This eliminates the need to convert operation strings to SignShopOperationListItem
+     * objects on every transaction.
+     */
+    private void buildCompiledOperationsCache() {
+        compiledOperations.clear();
+        for (Map.Entry<String, List<String>> entry : Operations.entrySet()) {
+            List<SignShopOperationListItem> compiled = signshopUtil.getSignShopOps(entry.getValue());
+            if (compiled != null) {
+                compiledOperations.put(entry.getKey(), compiled);
             }
         }
     }
@@ -494,7 +567,7 @@ public class SignShopConfig {
         closeStream(os);
     }
 
-    public String getError(String sType, Map<String, String> messageParts) {
+    public String getError(String sType, Map<String, Object> messageParts) {
         Map<String, String> localisedError = Errors.get(preferedLanguage);
         Map<String, String> defaultError = Errors.get(baseLanguage);
 
@@ -511,7 +584,7 @@ public class SignShopConfig {
         return fillInBlanks(coloredError, messageParts);
     }
 
-    public String getMessage(String sType, String pOperation, Map<String, String> messageParts) {
+    public String getMessage(String sType, String pOperation, Map<String, Object> messageParts) {
         Map<String, HashMap<String, String>> localisedMessage = Messages.get(preferedLanguage);
         Map<String, HashMap<String, String>> defaultMessage = Messages.get(baseLanguage);
 
@@ -534,6 +607,62 @@ public class SignShopConfig {
         return fillInBlanks(coloredMessage, messageParts);
     }
 
+    /**
+     * Gets a message as a BaseComponent with hover events for rich content like items.
+     *
+     * @param sType The message type (e.g., "transaction", "confirm")
+     * @param pOperation The operation name (e.g., "Buy", "Sell")
+     * @param messageParts Map of placeholders to values (String or ItemMessagePart)
+     * @return BaseComponent with hover tooltips
+     */
+    public BaseComponent getMessageAsComponent(String sType, String pOperation, Map<String, Object> messageParts) {
+        Map<String, HashMap<String, String>> localisedMessage = Messages.get(preferedLanguage);
+        Map<String, HashMap<String, String>> defaultMessage = Messages.get(baseLanguage);
+
+        String sOperation = pOperation;
+        if (OperationAliases.containsKey(sOperation))
+            sOperation = OperationAliases.get(sOperation);
+
+        String message;
+        if (!localisedMessage.containsKey(sType) || !localisedMessage.get(sType).containsKey(sOperation) || localisedMessage.get(sType).get(sOperation) == null) {
+            if (!defaultMessage.containsKey(sType) || !defaultMessage.get(sType).containsKey(sOperation) || defaultMessage.get(sType).get(sOperation) == null) {
+                return new TextComponent("");
+            }
+            else
+                message = defaultMessage.get(sType).get(sOperation);
+        }
+        else
+            message = localisedMessage.get(sType).get(sOperation);
+
+        String coloredMessage = ChatColor.translateAlternateColorCodes(getColorCode(), message);
+        return fillInBlanksAsComponent(coloredMessage, messageParts);
+    }
+
+    /**
+     * Gets an error message as a BaseComponent with hover events.
+     *
+     * @param sType The error type
+     * @param messageParts Map of placeholders to values (String or ItemMessagePart)
+     * @return BaseComponent with hover tooltips
+     */
+    public BaseComponent getErrorAsComponent(String sType, Map<String, Object> messageParts) {
+        Map<String, String> localisedError = Errors.get(preferedLanguage);
+        Map<String, String> defaultError = Errors.get(baseLanguage);
+
+        String error;
+        if (!localisedError.containsKey(sType) || localisedError.get(sType) == null) {
+            if (!defaultError.containsKey(sType) || defaultError.get(sType) == null)
+                return new TextComponent("");
+            else
+                error = defaultError.get(sType);
+        }
+        else
+            error = localisedError.get(sType);
+
+        String coloredError = ChatColor.translateAlternateColorCodes(getColorCode(), error);
+        return fillInBlanksAsComponent(coloredError, messageParts);
+    }
+
     public List<String> getBlocks(String pOp) {
         String op = pOp;
         if (OperationAliases.containsKey(op))
@@ -543,6 +672,22 @@ public class SignShopConfig {
             return Operations.get(op);
         else
             return new LinkedList<>();
+    }
+
+    /**
+     * Gets the compiled operation list for a shop type from cache.
+     * This is significantly faster than calling getBlocks() + getSignShopOps()
+     * because the operations are pre-compiled at config load time.
+     *
+     * @param pOp The operation name or alias (e.g., "Buy", "Sell")
+     * @return The compiled list of operations, or null if not found
+     */
+    public List<SignShopOperationListItem> getCompiledOperations(String pOp) {
+        String op = pOp;
+        if (OperationAliases.containsKey(op))
+            op = OperationAliases.get(op);
+
+        return compiledOperations.get(op);
     }
 
     public Collection<String> getOperations() {
@@ -631,14 +776,32 @@ public class SignShopConfig {
         }
     }
 
-    public String fillInBlanks(String pMessage, Map<String, String> messageParts) {
+    /**
+     * Fills in placeholder values in a message template. Values can be Strings or ItemMessagePart objects.
+     * For ItemMessagePart values, the cached string representation is used.
+     *
+     * @param pMessage The message template with placeholders (e.g., "You bought !items for !price!")
+     * @param messageParts Map of placeholder names to values (String or ItemMessagePart)
+     * @return The message with all placeholders replaced
+     */
+    public String fillInBlanks(String pMessage, Map<String, Object> messageParts) {
         String message = pMessage;
 
         if (messageParts == null)
             return message;
 
+        // Use TreeMap with StringLengthComparator to process longest placeholders first
+        // This prevents "!item" from matching when "!items" exists
         TreeMap<String, String> temp = new TreeMap<>(new StringLengthComparator());
-        temp.putAll(messageParts);
+
+        // Convert all values to strings (extract from ItemMessagePart if needed)
+        for (Map.Entry<String, Object> entry : messageParts.entrySet()) {
+            if (entry.getValue() instanceof String) {
+                temp.put(entry.getKey(), (String) entry.getValue());
+            } else if (entry.getValue() instanceof org.wargamer2010.signshop.util.ItemMessagePart) {
+                temp.put(entry.getKey(), ((org.wargamer2010.signshop.util.ItemMessagePart) entry.getValue()).getString());
+            }
+        }
 
         for (Map.Entry<String, String> part : temp.entrySet()) {
             if (part != null && part.getKey() != null && part.getValue() != null)
@@ -646,6 +809,85 @@ public class SignShopConfig {
         }
         message = message.replace("\\", "");
         return message;
+    }
+
+    /**
+     * Fills in placeholder values in a message template and returns a BaseComponent with hover events.
+     * This method processes ItemMessagePart values as rich hover tooltips showing full item details.
+     *
+     * @param pMessage The message template with placeholders (e.g., "You bought !items for !price!")
+     * @param messageParts Map of placeholder names to values (String or ItemMessagePart)
+     * @return BaseComponent with hover events for items
+     */
+    public BaseComponent fillInBlanksAsComponent(String pMessage, Map<String, Object> messageParts) {
+        if (pMessage == null || pMessage.isEmpty())
+            return new TextComponent("");
+
+        String workingMessage = ChatColor.translateAlternateColorCodes(getColorCode(), pMessage);
+        // Remove escape characters from template before processing
+        workingMessage = workingMessage.replace("\\", "");
+
+        if (messageParts == null || messageParts.isEmpty()) {
+            // No placeholders to replace, convert legacy colors and return
+            return TextComponent.fromLegacy(workingMessage);
+        }
+
+        // Build component by scanning message left-to-right, replacing placeholders as found
+        // Use TreeMap with StringLengthComparator to process longest placeholders first
+        // This prevents "!item" from matching when "!items" exists
+        TreeMap<String, Object> sortedParts = new TreeMap<>(new StringLengthComparator());
+        sortedParts.putAll(messageParts);
+
+        ComponentBuilder builder = new ComponentBuilder("");
+        boolean hasContent = false;
+        int currentPos = 0;
+
+        // Scan message left-to-right
+        while (currentPos < workingMessage.length()) {
+            // Find the next placeholder (check all placeholders, pick the earliest one)
+            int earliestIndex = -1;
+            String earliestPlaceholder = null;
+            Object earliestValue = null;
+
+            for (Map.Entry<String, Object> entry : sortedParts.entrySet()) {
+                int index = workingMessage.indexOf(entry.getKey(), currentPos);
+                if (index != -1 && (earliestIndex == -1 || index < earliestIndex)) {
+                    earliestIndex = index;
+                    earliestPlaceholder = entry.getKey();
+                    earliestValue = entry.getValue();
+                }
+            }
+
+            if (earliestIndex == -1) {
+                // No more placeholders, add remaining text
+                builder.append(TextComponent.fromLegacy(workingMessage.substring(currentPos)), ComponentBuilder.FormatRetention.NONE);
+                hasContent = true;
+                break;
+            }
+
+            // Add text before placeholder
+            if (earliestIndex > currentPos) {
+                builder.append(TextComponent.fromLegacy(workingMessage.substring(currentPos, earliestIndex)), ComponentBuilder.FormatRetention.NONE);
+                hasContent = true;
+            }
+
+            // Add placeholder value
+            if (earliestValue instanceof ItemMessagePart) {
+                BaseComponent itemComponent = itemUtil.itemStackToComponent(((ItemMessagePart) earliestValue).getItems());
+                builder.append(itemComponent, ComponentBuilder.FormatRetention.NONE);
+                hasContent = true;
+            } else if (earliestValue instanceof String) {
+                builder.append(TextComponent.fromLegacy((String) earliestValue), ComponentBuilder.FormatRetention.NONE);
+                hasContent = true;
+            }
+
+            // Move past this placeholder
+            currentPos = earliestIndex + earliestPlaceholder.length();
+        }
+
+        // Build final component
+        BaseComponent[] components = hasContent ? builder.create() : new BaseComponent[0];
+        return components.length > 0 ? new TextComponent(components) : new TextComponent("");
     }
 
     private void setupBlacklist() {
@@ -671,6 +913,15 @@ public class SignShopConfig {
     private void setupBackOfSignTextBlacklist() {
         BlacklistedBackOfSignText = new ArrayList<>();
         config.getStringList("BlacklistedBackOfSignText").forEach(s -> BlacklistedBackOfSignText.add(ChatColor.stripColor(s.toLowerCase())));
+    }
+    private void setupDebugClasses() {
+        DebugClasses = new ArrayList<>();
+        config.getStringList("DebugClasses").forEach(s -> DebugClasses.add(ChatColor.stripColor(s.toUpperCase())));
+
+    }
+
+    public boolean weAreDebuggingClass(String className) {
+       return DebugClasses.contains("ALL") || DebugClasses.contains(className.toUpperCase());
     }
 
     public Boolean stringIsOnBackOfSignTextBlacklist(String string){
@@ -798,6 +1049,18 @@ public class SignShopConfig {
         return EnableDynmapSupport;
     }
 
+    public boolean getShowMaterialInCustomNames() {
+        return ShowMaterialInCustomNames;
+    }
+
+    public boolean getShowItemDetailsInChat() {
+        return ShowItemDetailsInChat;
+    }
+
+    public boolean getShowItemHovers() {
+        return ShowItemHovers;
+    }
+
     public boolean getEnableTutorialMessages() {
         return EnableTutorialMessages;
     }
@@ -819,6 +1082,7 @@ public class SignShopConfig {
         return UseBlacklistAsWhitelist;
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean getEnableWrittenBookFix() {
         return EnableWrittenBookFix;
     }
@@ -951,6 +1215,10 @@ public class SignShopConfig {
                 itemUtil.updateFormattedMaterial(matKey, ChatColor.translateAlternateColorCodes(getColorCode(), customName));
             }
         }
+    }
+
+    public String getDebugClasses() {
+        return DebugClasses.toString();
     }
 
 

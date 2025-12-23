@@ -3,6 +3,21 @@ package org.wargamer2010.signshop.util;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+/**
+ * Utility methods for time formatting, duration display, and timestamp generation.
+ *
+ * <p>Converts seconds into human-readable duration strings (e.g., "2 Hours, 30 Minutes")
+ * and provides date/time formatting for transaction logs and shop creation timestamps.</p>
+ *
+ * <h2>Key Methods:</h2>
+ * <ul>
+ *   <li>{@link #parseTime(int)} - Converts seconds to "X Days, Y Hours, Z Minutes" format</li>
+ *   <li>{@link #getDateTimeStamp()} - Compact timestamp for file naming (MMddyyHHmm)</li>
+ *   <li>{@link #getDateTimeFromLong(Long)} - Formatted date for display (MM/dd/yy-HH:mm)</li>
+ * </ul>
+ *
+ * @see org.wargamer2010.signshop.timing.TimeManager
+ */
 public class SSTimeUtil {
     private SSTimeUtil() {
 

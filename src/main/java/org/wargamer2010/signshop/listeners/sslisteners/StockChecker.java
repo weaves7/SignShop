@@ -12,6 +12,12 @@ import org.wargamer2010.signshop.util.itemUtil;
 
 import java.util.List;
 
+/**
+ * Updates shop sign colors based on stock availability.
+ *
+ * <p>When a shop owner left-clicks their shop, this listener checks if the
+ * shop is stocked and updates the sign color (blue = stocked, red = out of stock).</p>
+ */
 public class StockChecker implements Listener {
     
     @EventHandler(priority = EventPriority.MONITOR)
@@ -31,7 +37,11 @@ public class StockChecker implements Listener {
         ItemStack[] allStacks = itemUtil.getAllItemStacksForContainables(event.getShop().getContainables());
         ItemStack[] filtered = itemUtil.filterStacks(allStacks, event.getShop().getItems());
 
-        event.setMessagePart("!shopinventory", (filtered.length == 0 ? "nothing" : itemUtil.itemStackToString(filtered)));
+        if (filtered.length == 0) {
+            event.setMessagePart("!shopinventory", "nothing");
+        } else {
+            event.setMessagePart("!shopinventory", itemUtil.itemStackToString(filtered));
+        }
         event.getPlayer().sendMessage(SignShop.getInstance().getSignShopConfig().getError("shop_contains", event.getMessageParts()));
     }
 }

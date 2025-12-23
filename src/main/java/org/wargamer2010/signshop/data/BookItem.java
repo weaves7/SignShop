@@ -1,4 +1,4 @@
-package org.wargamer2010.signshop.blocks;
+package org.wargamer2010.signshop.data;
 
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
@@ -8,6 +8,9 @@ import org.wargamer2010.signshop.SignShop;
 import java.util.Arrays;
 import java.util.logging.Level;
 
+/**
+ * Wrapper for written book metadata (pages, author, title, generation).
+ */
 public class BookItem implements IBookItem {
 
         protected BookMeta meta = null;

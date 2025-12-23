@@ -8,11 +8,16 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
+/**
+ * Utility for dynamically loading JAR files at runtime.
+ * Used for optional dependencies like database drivers.
+ */
 public class JarUtil {
     private static final ReentrantLock loadLocker = new ReentrantLock();
 
@@ -26,7 +31,7 @@ public class JarUtil {
             File libLocation = new File(SignShop.getInstance().getDataFolder(), "lib" + File.separator + filename);
             if (!libLocation.exists())
                 getDriver(libLocation);
-            JarUtil.addClassPath(new URL("jar:file:" + libLocation.getPath() + "!/"));
+            JarUtil.addClassPath(URI.create("jar:file:" + libLocation.getPath() + "!/").toURL());
             return true;
         } catch (IOException ignored) {
         } finally {

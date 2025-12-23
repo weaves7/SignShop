@@ -1,10 +1,16 @@
 
 package org.wargamer2010.signshop.timing;
 
+import org.wargamer2010.signshop.util.ItemMessagePart;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Expirable command that executes after a configured delay.
+ * Stores command type and message placeholders for delayed execution.
+ */
 public class TimedCommand implements IExpirable {
     private String ShopType;
     private String CommandType;
@@ -14,10 +20,31 @@ public class TimedCommand implements IExpirable {
 
     }
 
-    public TimedCommand(String shopType, String commandType, Map<String, String> messageParts) {
+    public TimedCommand(String shopType, String commandType, Map<String, Object> messageParts) {
         ShopType = shopType;
         CommandType = commandType;
-        MessageParts = messageParts;
+        MessageParts = convertToStringMap(messageParts);
+    }
+
+    /**
+     * Converts a Map<String, Object> to Map<String, String> by calling getString()
+     * on ItemMessagePart values and toString() on other objects.
+     */
+    private static Map<String, String> convertToStringMap(Map<String, Object> objectMap) {
+        Map<String, String> stringMap = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : objectMap.entrySet()) {
+            Object value = entry.getValue();
+            String stringValue;
+            if (value instanceof ItemMessagePart) {
+                stringValue = ((ItemMessagePart) value).getString();
+            } else if (value != null) {
+                stringValue = value.toString();
+            } else {
+                stringValue = "";
+            }
+            stringMap.put(entry.getKey(), stringValue);
+        }
+        return stringMap;
     }
 
     @Override
@@ -71,5 +98,14 @@ public class TimedCommand implements IExpirable {
 
     public Map<String, String> getMessageParts() {
         return Collections.unmodifiableMap(MessageParts);
+    }
+
+    /**
+     * Returns message parts as Map<String, Object> for compatibility with
+     * fillInBlanks() method. Since TimedCommand already converted all values
+     * to strings, this is a safe upcast.
+     */
+    public Map<String, Object> getMessagePartsAsObject() {
+        return Collections.unmodifiableMap(new LinkedHashMap<>(MessageParts));
     }
 }

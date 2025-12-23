@@ -5,6 +5,9 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.wargamer2010.signshop.SignShop;
 
+/**
+ * Lands integration hook that checks trust permissions in claimed land areas.
+ */
 public class LandsHook implements Hook {
     private final LandsIntegration landsIntegration = new LandsIntegration(SignShop.getInstance());
     @Override

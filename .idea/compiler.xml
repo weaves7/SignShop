@@ -11,8 +11,5 @@
         <module name="SignShopV3" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="SignShop" target="17" />
-    </bytecodeTargetLevel>
   </component>
 </project>

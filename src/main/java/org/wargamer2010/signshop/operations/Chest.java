@@ -5,6 +5,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.Seller;
 import org.wargamer2010.signshop.SignShop;
+import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.itemUtil;
 import org.wargamer2010.signshop.util.signshopUtil;
 
@@ -15,6 +16,10 @@ import java.util.logging.Level;
 
 import static org.wargamer2010.signshop.operations.SignShopArguments.separator;
 
+/**
+ * Operation that selects a specific numbered chest for multi-chest shop configurations.
+ * Allows Trade shops to use separate chests for different item sets (Chest{1}, Chest{2}).
+ */
 public class Chest implements SignShopOperation {
     private Boolean incorrectPar(SignShopArguments ssArgs) {
         ssArgs.getPlayer().get().sendMessage(SignShop.getInstance().getSignShopConfig().getError("could_not_complete_operation", null));
@@ -69,7 +74,7 @@ public class Chest implements SignShopOperation {
         // In case the next operation doesn't write to !items, in other cases it will be overwritten (by f.e. takePlayerItems)
         ItemStack[] isTotalItems = itemUtil.getAllItemStacksForContainables(ssArgs.getContainables().get());
         if(isTotalItems.length > 0) {
-            ssArgs.setMessagePart("!items", itemUtil.itemStackToString(isTotalItems));
+            ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(isTotalItems));
             ssArgs.miscSettings.put("chest" + iChestnumber, signshopUtil.implode(itemUtil.convertItemStacksToString(isTotalItems), separator));
         }
 
@@ -98,17 +103,33 @@ public class Chest implements SignShopOperation {
             return incorrectPar(ssArgs);
 
         ssArgs.forceMessageKeys.put("!items", ("!chest" + iChestnumber));
-        String misc = ssArgs.miscSettings.get(("chest" + iChestnumber));
-        String[] sItemss;
-        if(!misc.contains(SignShopArguments.separator)) {
-            sItemss = new String[1];
-            sItemss[0] = misc;
-        } else
-            sItemss = misc.split(SignShopArguments.separator);
-        ItemStack[] isItemss;
 
-        isItemss = itemUtil.convertStringtoItemStacks(Arrays.asList(sItemss));
+        // Use cached deserialized items if seller reference is available (performance optimization)
+        ItemStack[] isItemss;
+        if (ssArgs.getSeller() != null) {
+            isItemss = ssArgs.getSeller().getCachedMiscItems("chest" + iChestnumber);
+        } else {
+            // Fallback to manual deserialization if no seller reference (shouldn't happen normally)
+            String misc = ssArgs.miscSettings.get(("chest" + iChestnumber));
+            String[] sItemss;
+            if(!misc.contains(SignShopArguments.separator)) {
+                sItemss = new String[1];
+                sItemss[0] = misc;
+            } else
+                sItemss = misc.split(SignShopArguments.separator);
+            isItemss = itemUtil.convertStringtoItemStacks(Arrays.asList(sItemss));
+        }
+
+        // Phase 3B: Check for null items (incompatible items that failed to deserialize)
+        if (itemUtil.hasNullItems(isItemss)) {
+            ssArgs.getPlayer().get().sendMessage(SignShop.getInstance().getSignShopConfig().getError("shop_has_incompatible_items", ssArgs.getMessageParts()));
+            return false;
+        }
+
         ssArgs.getItems().set(isItemss);
+        // Set message part so !chest1, !chest2, etc. placeholders get replaced in transaction messages
+        // Set directly (don't use forceMessageKeys) to avoid being overwritten by other operations
+        ssArgs.setMessagePart("!chest" + iChestnumber, ItemMessagePart.fromItems(isItemss));
 
         Block bHolder = checkChestAmount(ssArgs, iChestnumber);
         if(bHolder != null) {

@@ -1,5 +1,13 @@
 package org.wargamer2010.signshop.util;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.chat.hover.content.Content;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Material;
@@ -16,21 +24,52 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.wargamer2010.signshop.Seller;
-import org.wargamer2010.signshop.SignShop;
-import org.wargamer2010.signshop.blocks.*;
+import org.wargamer2010.signshop.data.*;
 import org.wargamer2010.signshop.configuration.SignShopConfig;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.operations.SignShopArguments;
 import org.wargamer2010.signshop.operations.SignShopArgumentsType;
 import org.wargamer2010.signshop.operations.SignShopOperationListItem;
 import org.wargamer2010.signshop.player.VirtualInventory;
+import org.wargamer2010.signshop.data.serialization.ItemSerializer;
 
 import java.util.*;
-import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
+/**
+ * Utility class for ItemStack operations used throughout SignShop.
+ *
+ * <p>Provides static utility methods for item manipulation, comparison, serialization,
+ * inventory operations, and UI component generation. This is one of the most frequently
+ * used utility classes in the codebase.</p>
+ *
+ * <h2>Key Functionality:</h2>
+ * <ul>
+ *   <li><b>Item Serialization:</b> {@link #convertItemStacksToString(ItemStack[])} and
+ *       {@link #convertStringtoItemStacks(List)} for persistence</li>
+ *   <li><b>Inventory Operations:</b> {@link #getItemStacksForContainables(List)},
+ *       {@link #getAllItemStacksForContainables(List)} for chest access</li>
+ *   <li><b>Item Comparison:</b> {@link #itemstacksEqual(ItemStack, ItemStack, boolean)} for
+ *       trade shops and stock checking</li>
+ *   <li><b>UI Components:</b> {@link #itemStackToComponent(ItemStack, boolean)} for hover
+ *       tooltips in chat messages</li>
+ *   <li><b>Chunk Loading:</b> {@link #loadChunkByBlock(Block)} ensures chest chunks are loaded</li>
+ * </ul>
+ *
+ * <h2>Hover Tooltip System:</h2>
+ * <p>The {@link #itemStackToComponent} method creates chat components with hover events
+ * showing item details. On Paper servers, uses full item tooltips via reflection
+ * ({@code serializeItemAsJson}). On Spigot, shows limited info due to API restrictions.</p>
+ *
+ * <h2>Thread Safety:</h2>
+ * <p>All methods are static. Most are NOT thread-safe and must be called from the main thread
+ * as they interact with Bukkit API (blocks, inventories).</p>
+ *
+ * @see ItemSerializer
+ * @see SignShopArguments
+ * @see signshopUtil
+ */
 public class itemUtil {
     public static Map<Material, String> formattedMaterials = new HashMap<>();
     private static SignShopConfig signShopConfig;
@@ -71,6 +110,12 @@ public class itemUtil {
         return isBackupToTake;
     }
 
+    /**
+     * Gets all items from all containable blocks (chests, barrels, etc.).
+     *
+     * @param containables List of container blocks to extract items from
+     * @return Array of all non-null items found in the containers
+     */
     public static ItemStack[] getAllItemStacksForContainables(List<Block> containables) {
         List<ItemStack> tempItems = new LinkedList<>();
 
@@ -88,10 +133,26 @@ public class itemUtil {
         return tempItems.toArray(new ItemStack[0]);
     }
 
+    /**
+     * Checks if any containable has sufficient stock for the given items.
+     *
+     * @param containables List of container blocks to check
+     * @param items Items to check stock for
+     * @param bTakeOrGive true = check if items can be taken, false = check if items can fit
+     * @return true if any container has sufficient stock
+     */
     public static boolean stockOKForContainables(List<Block> containables, ItemStack[] items, boolean bTakeOrGive) {
         return (getFirstStockOKForContainables(containables, items, bTakeOrGive) != null);
     }
 
+    /**
+     * Finds the first containable with sufficient stock for the given items.
+     *
+     * @param containables List of container blocks to check
+     * @param items Items to check stock for
+     * @param bTakeOrGive true = check if items can be taken, false = check if items can fit
+     * @return First InventoryHolder with sufficient stock, or null if none found
+     */
     public static InventoryHolder getFirstStockOKForContainables(List<Block> containables, ItemStack[] items, boolean bTakeOrGive) {
         for(Block bHolder : containables) {
             if(bHolder.getState() instanceof InventoryHolder) {
@@ -104,31 +165,44 @@ public class itemUtil {
         return null;
     }
 
-    public static void fixBooks(ItemStack[] stacks) {//TODO this causes a ton of lag do we really even need this?
-        if (stacks == null || !signShopConfig.getEnableWrittenBookFix())
+    /**
+     * Fixes book metadata for items deserialized from legacy format.
+     * Only needed for backward compatibility with old shops.
+     *
+     * @param item The ItemStack to fix (must be WRITTEN_BOOK)
+     */
+    public static void fixBookLegacy(ItemStack item) {
+        if (item == null || !signShopConfig.getEnableWrittenBookFix()) {
             return;
-
-        for(ItemStack stack : stacks) {
-            if(stack != null && stack.getType() == Material.WRITTEN_BOOK &&
-                    stack.hasItemMeta() && stack.getItemMeta() instanceof BookMeta) {
-                ItemStack copy = new ItemStack(Material.WRITTEN_BOOK);
-
-                BookFactory.getBookItem(copy).copyFrom(BookFactory.getBookItem(stack));
-
-                ItemMeta copyMeta = copy.getItemMeta();
-                ItemMeta realMeta = stack.getItemMeta();
-
-                copyMeta.setDisplayName(realMeta.getDisplayName());
-                copyMeta.setLore(realMeta.getLore());
-
-                for(Map.Entry<Enchantment, Integer> entry : realMeta.getEnchants().entrySet())
-                    copyMeta.addEnchant(entry.getKey(), entry.getValue(), true);
-
-                stack.setItemMeta(copyMeta);
-            }
         }
+
+        if (item.getType() != Material.WRITTEN_BOOK || !item.hasItemMeta() || !(item.getItemMeta() instanceof BookMeta)) {
+            return;
+        }
+
+        ItemStack copy = new ItemStack(Material.WRITTEN_BOOK);
+
+        BookFactory.getBookItem(copy).copyFrom(BookFactory.getBookItem(item));
+
+        ItemMeta copyMeta = copy.getItemMeta();
+        ItemMeta realMeta = item.getItemMeta();
+
+        copyMeta.setDisplayName(realMeta.getDisplayName());
+        copyMeta.setLore(realMeta.getLore());
+
+        for (Map.Entry<Enchantment, Integer> entry : realMeta.getEnchants().entrySet()) {
+            copyMeta.addEnchant(entry.getKey(), entry.getValue(), true);
+        }
+
+        item.setItemMeta(copyMeta);
     }
 
+    /**
+     * Converts an integer to Roman numerals (used for enchantment level display).
+     *
+     * @param binary Integer value to convert (1-3999)
+     * @return Roman numeral string, or empty string if out of range
+     */
     public static String binaryToRoman(int binary) {
         final String[] RCODE = {"M", "CM", "D", "CD", "C", "XC", "L",
                                            "XL", "X", "IX", "V", "IV", "I"};
@@ -207,7 +281,7 @@ public class itemUtil {
         return sb.toString();
     }
 
-    @SuppressWarnings("deprecation")
+   @SuppressWarnings("deprecation")
     private static ItemStack getSingleAmountOfStack(ItemStack item) {
         if(item == null)
             return null;
@@ -221,12 +295,17 @@ public class itemUtil {
         return tags.copyTags(item, isBackup);
     }
 
-   @SuppressWarnings("MismatchedQueryAndUpdateOfCollection")
+    /**
+     * Converts an array of ItemStacks to a human-readable string for chat messages.
+     * Consolidates duplicate items and includes enchantments/lore if configured.
+     *
+     * @param isStacks The item stacks to convert
+     * @return Formatted string like "5 Diamond Sword, 3 Iron Pickaxe"
+     */
     public static String itemStackToString(ItemStack[] isStacks) {
-        if(isStacks == null || isStacks.length == 0)
+        if(isStacks == null)
             return "";
         HashMap<ItemStack, Integer> items = new HashMap<>();
-        HashMap<ItemStack, Map<Enchantment, Integer>> enchantments = new HashMap<>();
         StringBuilder sItems = new StringBuilder();
         boolean first = true;
         int tempAmount;
@@ -235,8 +314,6 @@ public class itemUtil {
                 continue;
             ItemStack isBackup = getSingleAmountOfStack(item);
 
-            if(item.getEnchantments().size() > 0)
-                enchantments.put(isBackup, item.getEnchantments());
             if(items.containsKey(isBackup)) {
                 tempAmount = (items.get(isBackup) + item.getAmount());
                 items.put(isBackup, tempAmount);
@@ -246,21 +323,198 @@ public class itemUtil {
         for(Map.Entry<ItemStack, Integer> entry : items.entrySet()) {
             if (first) first = false;
             else sItems.append(signShopConfig.getTextColor()).append(", ");
-            String newItemMeta = SignShopItemMeta.getName(entry.getKey());
+            String newItemMeta = SignShopItemMeta.getName(entry.getKey(), signShopConfig.getShowItemDetailsInChat());
             String count = (signShopConfig.getTextColor() + entry.getValue().toString() + " ");
             if(newItemMeta.isEmpty())
                 sItems.append(count).append(formatMaterialName(entry.getKey()));
             else
                 sItems.append(count).append(newItemMeta);
-            if(itemUtil.isWriteableBook(entry.getKey())) {
-                IBookItem book = BookFactory.getBookItem(entry.getKey());
-                if(book != null && (book.getAuthor() != null || book.getTitle() != null))
-                    sItems.append(" (").append(book.getTitle() == null ? "Unknown" : book.getTitle()).append(" by ").append(book.getAuthor() == null ? "Unknown" : book.getAuthor()).append(")");
+
+            // Conditionally add extra details in visible text (matches itemStackToComponent behavior)
+            if (signShopConfig.getShowItemDetailsInChat()) {
+                if(itemUtil.isWriteableBook(entry.getKey())) {
+                    IBookItem book = BookFactory.getBookItem(entry.getKey());
+                    if(book != null && (book.getAuthor() != null || book.getTitle() != null))
+                        sItems.append(" (").append(book.getTitle() == null ? "Unknown" : book.getTitle()).append(" by ").append(book.getAuthor() == null ? "Unknown" : book.getAuthor()).append(")");
+                }
+                if (entry.getKey().hasItemMeta() && entry.getKey().getItemMeta().hasLore()){
+                    sItems.append(signShopConfig.getTextColor()).append("<").append(ChatColor.RESET);
+                    boolean firstLore = true;
+                    for (String loreLine : entry.getKey().getItemMeta().getLore()){
+                        if (firstLore) firstLore = false;
+                        else sItems.append(signShopConfig.getTextColor()).append(", ").append(ChatColor.RESET);
+                        sItems.append(loreLine);
+                    }
+                    sItems.append(signShopConfig.getTextColor()).append("> ").append(ChatColor.RESET);
+                }
             }
             sItems.append(ChatColor.WHITE);
         }
 
         return sItems.toString();
+    }
+
+    /**
+     * Converts an array of ItemStacks to a TextComponent with hover tooltips showing full item details.
+     * Each item in the list gets its own hover event displaying the complete item information
+     * (enchantments, lore, durability, attributes, etc.) as if hovering over it in an inventory.
+     *
+     * @param isStacks The item stacks to convert
+     * @return BaseComponent with hover events, or simple TextComponent if items is null/empty
+     */
+    @SuppressWarnings("deprecation") // Bukkit.getUnsafe() required for Paper runtime detection
+    public static BaseComponent itemStackToComponent(ItemStack[] isStacks) {
+        if (isStacks == null)
+            return new TextComponent("");
+
+        // Consolidate duplicate items (same logic as itemStackToString)
+        HashMap<ItemStack, Integer> items = new HashMap<>();
+
+        for (ItemStack item : isStacks) {
+            if (item == null)
+                continue;
+            ItemStack isBackup = getSingleAmountOfStack(item);
+
+            if (items.containsKey(isBackup)) {
+                int tempAmount = (items.get(isBackup) + item.getAmount());
+                items.put(isBackup, tempAmount);
+            } else {
+                items.put(isBackup, item.getAmount());
+            }
+        }
+
+        // Build component with hover events for each item
+        ComponentBuilder builder = new ComponentBuilder("");
+        boolean first = true;
+
+        for (Map.Entry<ItemStack, Integer> entry : items.entrySet()) {
+            if (first) {
+                first = false;
+            } else {
+                builder.append(", ").color(net.md_5.bungee.api.ChatColor.getByChar(signShopConfig.getTextColor().getChar()));
+            }
+
+            // Build the visible text
+            String itemName = SignShopItemMeta.getName(entry.getKey(), signShopConfig.getShowItemDetailsInChat());
+            String count = entry.getValue().toString() + " ";
+            // Prepend default color code so it applies unless overridden by item name colors
+            String colorCode = "§" + signShopConfig.getTextColor().getChar();
+            String displayText = colorCode + count + (itemName.isEmpty() ? formatMaterialName(entry.getKey()) : itemName);
+
+            // Conditionally add extra details in visible text (always shown in hover tooltip)
+            if (signShopConfig.getShowItemDetailsInChat()) {
+                // Add book info if applicable
+                if (isWriteableBook(entry.getKey())) {
+                    IBookItem book = BookFactory.getBookItem(entry.getKey());
+                    if (book != null && (book.getAuthor() != null || book.getTitle() != null)) {
+                        displayText += " (" + (book.getTitle() == null ? "Unknown" : book.getTitle()) +
+                                      " by " + (book.getAuthor() == null ? "Unknown" : book.getAuthor()) + ")";
+                    }
+                }
+
+                // Add lore preview if applicable
+                if (entry.getKey().hasItemMeta() && entry.getKey().getItemMeta().hasLore()) {
+                    StringBuilder lorePreview = new StringBuilder(colorCode + " <");
+                    boolean firstLore = true;
+                    for (String loreLine : entry.getKey().getItemMeta().getLore()) {
+                        if (firstLore) firstLore = false;
+                        else lorePreview.append(colorCode).append(", ").append(ChatColor.RESET);
+                        lorePreview.append(loreLine);  // Keep original lore colors!
+                    }
+                    lorePreview.append(colorCode).append("> ").append(ChatColor.RESET);
+                    displayText += lorePreview.toString();
+                }
+            }
+
+            // Add trailing white color to match itemStackToString behavior
+            displayText += ChatColor.WHITE;
+
+            // Parse legacy color codes into components
+            // This preserves color codes from custom item names while applying default color
+            BaseComponent itemComponent = TextComponent.fromLegacy(displayText);
+
+            // Add hover event showing full item tooltip (if enabled in config)
+            if (signShopConfig.getShowItemHovers()) {
+                try {
+                    // Create a copy of the item with the correct amount for tooltip
+                    ItemStack hoverItem = entry.getKey().clone();
+                    hoverItem.setAmount(entry.getValue());
+
+                    HoverEvent hoverEvent = null;
+
+                    // Try Paper's serializeItemAsJson() first for full tooltip support (1.20.5+)
+                    // Uses reflection since this method only exists on Paper, not pure Spigot
+                    java.lang.reflect.Method serializeMethod;
+                    try {
+                        // Call Bukkit.getUnsafe().serializeItemAsJson(item) via reflection
+                        serializeMethod = Bukkit.getUnsafe().getClass()
+                            .getMethod("serializeItemAsJson", ItemStack.class);
+                        JsonObject itemJson = (JsonObject) serializeMethod.invoke(Bukkit.getUnsafe(), hoverItem);
+
+                        if (itemJson != null) {
+                            String itemId = itemJson.get("id").getAsString();
+                            int itemCount = itemJson.get("count").getAsInt();
+                            JsonElement components = itemJson.get("components");
+
+                            if (components != null) {
+                                // Paper server with Data Components - full tooltip support!
+                                hoverEvent = new HoverEvent(
+                                    HoverEvent.Action.SHOW_ITEM,
+                                    new PaperItemHoverContent(itemId, itemCount, components)
+                                );
+                            }
+                        }
+                    } catch (NoSuchMethodException e) {
+                        // Not a Paper server, fall through to Spigot method
+                    } catch (Exception e) {
+                        // Paper method failed, fall through to Spigot method
+                    }
+
+                    // Fallback to Spigot method if Paper method didn't work
+                    if (hoverEvent == null) {
+                        // Serialize the item's data for the hover tooltip
+                        // NOTE: Due to a known BungeeCord limitation (issue #3688), hover tooltips
+                        // only show the item type on Spigot 1.20.5+/1.21, not enchantments/lore/etc.
+                        // This will be fixed when BungeeCord updates ItemTag.ofNbt() to support
+                        // the new Data Components format introduced in Minecraft 1.20.5.
+                        String itemData = null;
+                        if (hoverItem.hasItemMeta()) {
+                            ItemMeta meta = hoverItem.getItemMeta();
+                            if (meta != null) {
+                                try {
+                                    String metaString = meta.getAsString();
+                                    if (metaString != null && !metaString.isEmpty()) {
+                                        itemData = metaString;
+                                    }
+                                } catch (Exception e) {
+                                    // Serialization failed, use empty data
+                                }
+                            }
+                        }
+
+                        // Create the hover event with the item data
+                        // Use empty tag "{}" if no metadata, otherwise use serialized NBT
+                        hoverEvent = new HoverEvent(
+                            HoverEvent.Action.SHOW_ITEM,
+                            new net.md_5.bungee.api.chat.hover.content.Item(
+                                hoverItem.getType().getKey().toString(),
+                                hoverItem.getAmount(),
+                                net.md_5.bungee.api.chat.ItemTag.ofNbt(itemData != null ? itemData : "{}")
+                            )
+                        );
+                    }
+
+                    itemComponent.setHoverEvent(hoverEvent);
+                } catch (Exception e) {
+                    // If hover fails, just use the text without hover (fallback gracefully)
+                    // This ensures the message still displays even if hover creation fails
+                }
+            }
+
+            builder.append(itemComponent);
+        }
+
+        return new TextComponent(builder.create());
     }
 
     @SuppressWarnings("deprecation")
@@ -278,6 +532,12 @@ public class itemUtil {
         return enchantmentMessage.toString();
     }
 
+    /**
+     * Sets the color of a shop sign's first line to indicate stock status.
+     *
+     * @param sign The sign block to update
+     * @param color The color to apply (typically blue=stocked, red=out of stock)
+     */
     public static void setSignStatus(Block sign, ChatColor color) {
         if(clickedSign(sign)) {
             Sign signblock = ((Sign) sign.getState());
@@ -326,6 +586,13 @@ public class itemUtil {
         return true;
     }
 
+    /**
+     * Converts an ItemStack array to a map of item type to total quantity.
+     * Used for consolidating and counting items across multiple stacks.
+     *
+     * @param isStacks Array of ItemStacks to consolidate
+     * @return Map where key is item (amount=1) and value is total count
+     */
     public static HashMap<ItemStack, Integer> StackToMap(ItemStack[] isStacks) {
         ItemStack[] isBackup = getBackupItemStack(isStacks);
         HashMap<ItemStack, Integer> mReturn = new HashMap<>();
@@ -345,6 +612,12 @@ public class itemUtil {
         return mReturn;
     }
 
+    /**
+     * Creates a deep copy of an ItemStack array (clones each item).
+     *
+     * @param isOriginal Original array to clone
+     * @return New array with cloned ItemStacks, or null if input is null
+     */
     public static ItemStack[] getBackupItemStack(ItemStack[] isOriginal) {
         if(isOriginal == null)
             return null;
@@ -392,7 +665,11 @@ public class itemUtil {
         }
     }
 
-    public static void updateStockStatusPerShop(Seller pSeller) {//TODO called frequently
+    /**
+     * Updates sign color based on stock status for a specific shop.
+     * Called after every transaction - optimization target if shop operations lag.
+     */
+    public static void updateStockStatusPerShop(Seller pSeller) {
         if(pSeller != null) {
             Block pSign = pSeller.getSign();
             if(pSign == null || !(pSign.getState() instanceof Sign))
@@ -408,6 +685,7 @@ public class itemUtil {
                                                                 null, null, pSign, signshopUtil.getOperation(sLines[0]), null, Action.RIGHT_CLICK_BLOCK, SignShopArgumentsType.Check);
             if(pSeller.getRawMisc() != null)
                 ssArgs.miscSettings = pSeller.getRawMisc();
+            ssArgs.setSeller(pSeller);  // Set seller reference for cached item access
             Boolean reqOK = true;
             for(SignShopOperationListItem ssOperation : SignShopOperations) {
                 ssArgs.setOperationParameters(ssOperation.getParameters());
@@ -422,7 +700,12 @@ public class itemUtil {
         }
     }
 
-    public static void updateStockStatus(Block bSign, ChatColor ccColor) {//TODO this is called frequently and makes many ops take a while
+    /**
+     * Updates stock status by checking all chests linked to a shop.
+     * Called after every transaction to update sign color.
+     * If shop operations feel slow, this is a candidate for profiling.
+     */
+    public static void updateStockStatus(Block bSign, ChatColor ccColor) {
         Seller seTemp = Storage.get().getSeller(bSign.getLocation());
         if(seTemp != null) {
             List<Block> iChests = seTemp.getContainables();
@@ -471,49 +754,72 @@ public class itemUtil {
     }
 
 
+    /**
+     * Deserializes a list of serialized item strings back to ItemStacks.
+     *
+     * @param itemStringList List of serialized item strings from sellers.yml
+     * @return Array of deserialized ItemStacks (may contain nulls if deserialization fails)
+     * @see ItemSerializer#deserialize
+     */
     public static ItemStack[] convertStringtoItemStacks(List<String> itemStringList) {
         ItemStack[] itemStacks = new ItemStack[itemStringList.size()];
 
         for (int i = 0; i < itemStringList.size(); i++) {
-            try {
-                String base64prop = itemStringList.get(i);
-                if (base64prop != null) {
-                    ItemStack[] convertedStacks = BukkitSerialization.itemStackArrayFromBase64(base64prop);
-                    if(convertedStacks.length > 0 && convertedStacks[0] != null) {
-                        itemStacks[i] = convertedStacks[0];
-                    }
-                }
-            } catch (Exception e) {
-                if (signShopConfig.debugging()) {
-                    SignShop.log("Error converting strings to item stacks.", Level.WARNING);
-                }
-            }
+            itemStacks[i] = ItemSerializer.deserialize(itemStringList.get(i));
         }
-
-
         return itemStacks;
     }
 
+    /**
+     * Checks if an ItemStack array contains any null items.
+     *
+     * <p>Null items can occur when:</p>
+     * <ul>
+     *   <li>Item deserialization fails (incompatible items)</li>
+     *   <li>Corrupted shop data</li>
+     *   <li>Items that can't be loaded in current Spigot version</li>
+     * </ul>
+     *
+     * @param items The ItemStack array to check (null-safe)
+     * @return true if array contains at least one null item, false otherwise
+     * @since 5.2.0
+     */
+    public static boolean hasNullItems(ItemStack[] items) {
+        if (items == null) {
+            return false;
+        }
+
+        for (ItemStack item : items) {
+            if (item == null) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Serializes an array of ItemStacks to strings for persistence in sellers.yml.
+     *
+     * @param itemStackArray Items to serialize
+     * @return Array of serialized strings (YAML: or LEGACY: prefixed)
+     * @see ItemSerializer#serialize
+     */
     public static String[] convertItemStacksToString(ItemStack[] itemStackArray) {
         List<String> itemStringList = new ArrayList<>();
-        if (itemStackArray == null)
-            return new String[1];
-
-        ItemStack currentItemStack;
-        for (ItemStack itemStack : itemStackArray) {
-            if (itemStack != null) {
-                currentItemStack = itemStack;
-                ItemStack[] stacks = new ItemStack[1];
-                stacks[0] = currentItemStack;
-
-                itemStringList.add(BukkitSerialization.itemStackArrayToBase64(stacks));
-
-            }
-
+        if (itemStackArray == null) {
+            return new String[0];
         }
-        String[] items = new String[itemStringList.size()];
-        itemStringList.toArray(items);
-        return items;
+
+        for (ItemStack item : itemStackArray) {
+            if (item != null) {
+                String serialized = ItemSerializer.serialize(item);
+                if (serialized != null) {
+                    itemStringList.add(serialized);
+                }
+            }
+        }
+        return itemStringList.toArray(new String[0]);
     }
 
 
@@ -523,6 +829,15 @@ public class itemUtil {
     }
 
 
+    /**
+     * Compares two ItemStacks for equality, optionally ignoring durability.
+     * Used for trade shop item matching.
+     *
+     * @param a First ItemStack to compare
+     * @param b Second ItemStack to compare
+     * @param ignoredur If true, ignores durability differences
+     * @return true if items are equal based on type, enchantments, and metadata
+     */
     @SuppressWarnings("deprecation")
     public static boolean itemstackEqual(ItemStack a, ItemStack b, boolean ignoredur) {
         if(a.getType() != b.getType())
@@ -537,6 +852,13 @@ public class itemUtil {
         return a.getMaxStackSize() == b.getMaxStackSize();
     }
 
+    /**
+     * Ensures chunks around a block are loaded within a given radius.
+     * Critical for shop operations when chests may be in unloaded chunks.
+     *
+     * @param block Center block
+     * @param radius Number of chunk-sized steps to load in each direction
+     */
     public static void loadChunkByBlock(Block block, int radius) {
         boolean OK = true;
         int chunksize = 12;
@@ -554,6 +876,12 @@ public class itemUtil {
 
     }
 
+    /**
+     * Ensures the chunk containing a block is loaded.
+     *
+     * @param block Block whose chunk should be loaded
+     * @return true if chunk is now loaded, false if load failed or block is null
+     */
     public static boolean loadChunkByBlock(Block block) {
         if(block == null)
             return false;
@@ -561,5 +889,43 @@ public class itemUtil {
         if (!chunk.isLoaded())
             return chunk.load();
         return true; // Chunk already loaded
+    }
+
+    /**
+     * Custom HoverEvent Content class for Paper's Data Components format (1.20.5+).
+     * This enables full item tooltips (enchantments, lore, etc.) on Paper servers
+     * while maintaining graceful fallback on pure Spigot servers.
+     * Based on solution from BungeeCord issue #3688 (OstlerDev).
+     */
+    private static final class PaperItemHoverContent extends Content {
+        private final String id;
+        private final int count;
+        private final JsonElement components;
+
+        private PaperItemHoverContent(String id, int count, JsonElement components) {
+            this.id = id;
+            this.count = count;
+            this.components = components;
+        }
+
+        @Override
+        public HoverEvent.Action requiredAction() {
+            return HoverEvent.Action.SHOW_ITEM;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            PaperItemHoverContent that = (PaperItemHoverContent) o;
+            return count == that.count &&
+                   java.util.Objects.equals(id, that.id) &&
+                   java.util.Objects.equals(components, that.components);
+        }
+
+        @Override
+        public int hashCode() {
+            return java.util.Objects.hash(id, count, components);
+        }
     }
 }

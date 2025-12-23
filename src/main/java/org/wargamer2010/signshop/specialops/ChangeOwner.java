@@ -5,7 +5,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.wargamer2010.signshop.Seller;
 import org.wargamer2010.signshop.SignShop;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.player.PlayerCache;
 import org.wargamer2010.signshop.player.PlayerIdentifier;
 import org.wargamer2010.signshop.player.SignShopPlayer;
@@ -14,6 +14,10 @@ import org.wargamer2010.signshop.util.clicks;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Special operation that transfers shop ownership to another player.
+ * Requires the new owner to be in the clickmap and appropriate permissions for the current owner.
+ */
 public class ChangeOwner implements SignShopSpecialOp {
     @Override
     public Boolean runOperation(List<Block> clickedBlocks, PlayerInteractEvent event, Boolean ranSomething) {

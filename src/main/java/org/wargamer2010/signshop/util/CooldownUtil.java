@@ -3,6 +3,23 @@ package org.wargamer2010.signshop.util;
 
 import org.wargamer2010.signshop.events.IMessagePartContainer;
 
+/**
+ * Utility methods for formatting shop cooldown durations into human-readable messages.
+ *
+ * <p>Converts cooldown time remaining (in seconds) into multiple units (seconds, minutes,
+ * hours, days, years) and sets them as message parts for template substitution.</p>
+ *
+ * <h2>Message Parts Set:</h2>
+ * <ul>
+ *   <li>{@code !cooldownleft} - Time in seconds</li>
+ *   <li>{@code !cooldownminutesleft} - Time in minutes</li>
+ *   <li>{@code !cooldownhoursleft} - Time in hours</li>
+ *   <li>{@code !cooldowndaysleft} - Time in days</li>
+ *   <li>{@code !cooldownyearsleft} - Time in years</li>
+ * </ul>
+ *
+ * @see org.wargamer2010.signshop.listeners.sslisteners.ShopCooldown
+ */
 public class CooldownUtil {
     private CooldownUtil() {
 

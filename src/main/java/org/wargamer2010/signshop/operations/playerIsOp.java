@@ -2,6 +2,9 @@ package org.wargamer2010.signshop.operations;
 
 import org.wargamer2010.signshop.SignShop;
 
+/**
+ * Shop operation that requires admin permissions to create admin shops (iBuy, iSell, etc).
+ */
 public class playerIsOp implements SignShopOperation {    
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {        

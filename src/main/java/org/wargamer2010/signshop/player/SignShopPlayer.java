@@ -1,5 +1,7 @@
 package org.wargamer2010.signshop.player;
 
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.TextComponent;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
@@ -7,12 +9,24 @@ import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.Seller;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.Vault;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.util.itemUtil;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Wrapper around Bukkit Player providing SignShop-specific functionality.
+ *
+ * <p>Abstracts player operations for shop owners and customers, handling
+ * both online and offline players. Provides methods for inventory management,
+ * money operations via Vault, messaging, and permission checks.</p>
+ *
+ * <p>Instances are cached via {@link PlayerCache} to avoid repeated creation.</p>
+ *
+ * @see PlayerCache
+ * @see PlayerIdentifier
+ */
 public class SignShopPlayer {
 
     private String playername = "";
@@ -49,7 +63,7 @@ public class SignShopPlayer {
      * This is a legacy constructor and is purely here for backwards compatibility
      *
      * @param name Player name
-     * @deprecated Lookup by name has been deprecated so use the PlayerIdentifier alternative in stead
+     * @deprecated Lookup by name has been deprecated so use the PlayerIdentifier alternative instead
      */
     @Deprecated
     public SignShopPlayer(String name) {
@@ -94,6 +108,54 @@ public class SignShopPlayer {
             return;
         String message = (ChatColor.GOLD + SignShop.getInstance().getSignShopConfig().getChatPrefix() + ChatColor.WHITE + " " + sMessage);
         getPlayer().sendMessage(message);
+    }
+
+    /**
+     * Sends a rich text message with hover events (e.g., item tooltips) to the player.
+     * The message respects cooldown settings and will be queued if necessary.
+     *
+     * @param component The component to send (with hover events)
+     */
+    public void sendMessage(BaseComponent component) {
+        if (component == null || getPlayer() == null || ignoreMessages)
+            return;
+
+        // Convert component to plain text for cooldown deduplication
+        // Use toPlainText() to strip ALL formatting including color codes
+        String plainText = component.toPlainText();
+        if (plainText == null || plainText.trim().isEmpty())
+            return;
+
+        if (SignShop.getInstance().getSignShopConfig().getMessageCooldown() <= 0) {
+            sendNonDelayedMessage(component);
+            return;
+        }
+
+        MessageWorker.init();
+        MessageWorker.OfferMessage(plainText, component, this);
+    }
+
+    /**
+     * Sends a rich text message immediately without cooldown delay.
+     *
+     * @param component The component to send
+     */
+    public void sendNonDelayedMessage(BaseComponent component) {
+        if (component == null || getPlayer() == null || ignoreMessages)
+            return;
+
+        // Check for empty content - toPlainText() strips ALL formatting including color codes
+        String plainText = component.toPlainText();
+        if (plainText == null || plainText.trim().isEmpty())
+            return;
+
+        // Add chat prefix
+        TextComponent prefixedMessage = new TextComponent(
+            ChatColor.GOLD + SignShop.getInstance().getSignShopConfig().getChatPrefix() + ChatColor.WHITE + " "
+        );
+        prefixedMessage.addExtra(component);
+
+        getPlayer().spigot().sendMessage(prefixedMessage);
     }
 
     public String getName() {
@@ -242,6 +304,10 @@ public class SignShopPlayer {
             response = Vault.getEconomy().depositPlayer(getOfflinePlayer(), actual);
         } catch (java.lang.RuntimeException ex) {
             response = new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "");
+            SignShop.getInstance().debugMessage("canNotHaveMoney() caught exception from economy!");
+            if (SignShop.getInstance().getSignShopConfig().debugging()) {
+                ex.printStackTrace();
+            }
         }
 
         double newBalance = Vault.getEconomy().getBalance(getOfflinePlayer());
@@ -270,6 +336,10 @@ public class SignShopPlayer {
                 return true;
         } catch (java.lang.RuntimeException ex) {
             response = new EconomyResponse(0, 0, EconomyResponse.ResponseType.FAILURE, "");
+            SignShop.getInstance().debugMessage("mutateMoney() caught exception from economy!");
+            if (SignShop.getInstance().getSignShopConfig().debugging()) {
+                ex.printStackTrace();
+            }
         }
         return response.type == EconomyResponse.ResponseType.SUCCESS;
     }
@@ -316,8 +386,6 @@ public class SignShopPlayer {
         if (sGroups == null) return fPricemod;
 
         boolean firstRun = true;
-        if (sGroups.length == 0)
-            return fPricemod;
         for (String sGroup1 : sGroups) {
             String sGroup = sGroup1.toLowerCase();
             if (SignShop.getInstance().getSignShopConfig().getPriceMultipliers().containsKey(sGroup) && SignShop.getInstance().getSignShopConfig().getPriceMultipliers().get(sGroup).containsKey(sOperation)) {
@@ -366,10 +434,7 @@ public class SignShopPlayer {
     public ItemStack[] getInventoryContents() {
         if (getPlayer() == null)
             return new ItemStack[0];
-        ItemStack[] temp = getPlayer().getInventory().getContents();
-        if (SignShop.getInstance().getSignShopConfig().getEnableWrittenBookFix())
-            itemUtil.fixBooks(temp); //TODO do we even need to fix books anymore?
-        return temp;
+        return getPlayer().getInventory().getContents();
     }
 
     public void setInventoryContents(ItemStack[] newContents) {

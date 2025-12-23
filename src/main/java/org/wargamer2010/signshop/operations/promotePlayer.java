@@ -6,6 +6,10 @@ import org.bukkit.block.sign.Side;
 import org.bukkit.entity.Player;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.Vault;
+
+/**
+ * Shop operation that promotes a player to a permission group specified on sign line 2 using Vault permissions.
+ */
 public class promotePlayer implements SignShopOperation {
     // Note: promotePlayer works with global permission groups explicitly.
     // It will not add players to local groups unless adding to global groups is not possible

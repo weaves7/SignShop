@@ -6,6 +6,9 @@ import org.bukkit.block.data.type.Switch;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.util.signshopUtil;
 
+/**
+ * Shop operation that turns on linked lever blocks.
+ */
 public class setRedstoneOn implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

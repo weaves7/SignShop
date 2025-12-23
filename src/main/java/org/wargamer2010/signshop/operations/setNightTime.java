@@ -4,6 +4,9 @@ import org.bukkit.World;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 
+/**
+ * Shop operation that sets the world time to night (time 14000).
+ */
 public class setNightTime implements SignShopOperation {    
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

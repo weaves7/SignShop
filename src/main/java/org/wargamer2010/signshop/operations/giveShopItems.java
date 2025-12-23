@@ -3,10 +3,14 @@ package org.wargamer2010.signshop.operations;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.SignShop;
+import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.itemUtil;
 
 import java.util.HashMap;
 
+/**
+ * Shop operation that adds items to shop chests from transactions.
+ */
 public class giveShopItems implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {
@@ -22,7 +26,7 @@ public class giveShopItems implements SignShopOperation {
         }
         if(isTotalItems.length > 0)
             ssArgs.getItems().set(isTotalItems);
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         return true;
     }
 
@@ -33,6 +37,12 @@ public class giveShopItems implements SignShopOperation {
             return false;
         }
 
+        // Phase 3B: Check for null items within the array (incompatible items that failed to deserialize)
+        if (ssArgs.getItems().get() != null && itemUtil.hasNullItems(ssArgs.getItems().get())) {
+            ssArgs.getPlayer().get().sendMessage(SignShop.getInstance().getSignShopConfig().getError("shop_has_incompatible_items", ssArgs.getMessageParts()));
+            return false;
+        }
+
         Boolean bStockOK = itemUtil.stockOKForContainables(ssArgs.getContainables().get(), ssArgs.getItems().get(), false);
         if(!bStockOK)
             ssArgs.sendFailedRequirementsMessage("overstocked");
@@ -40,7 +50,7 @@ public class giveShopItems implements SignShopOperation {
             itemUtil.updateStockStatus(ssArgs.getSign().get(), SignShop.getInstance().getSignShopConfig().getOutOfStockColor());
         else if(activeCheck)
             itemUtil.updateStockStatus(ssArgs.getSign().get(), SignShop.getInstance().getSignShopConfig().getInStockColor());
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         return bStockOK;
     }
 

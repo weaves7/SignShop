@@ -8,12 +8,16 @@ import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.Vault;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.logging.Level;
 
+/**
+ * Command handler for /signshop stats.
+ * Displays shop statistics, plugin versions, and system information.
+ */
 public class StatsHandler implements ICommandHandler {
     private static final ICommandHandler instance = new StatsHandler();
 

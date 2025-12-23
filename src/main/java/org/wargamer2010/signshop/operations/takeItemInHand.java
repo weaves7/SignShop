@@ -1,8 +1,12 @@
 package org.wargamer2010.signshop.operations;
 
 import org.bukkit.inventory.ItemStack;
+import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.itemUtil;
 
+/**
+ * Shop operation that takes the item currently held in the player's hand.
+ */
 public class takeItemInHand implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {
@@ -20,7 +24,7 @@ public class takeItemInHand implements SignShopOperation {
             ItemStack[] isItems = new ItemStack[1];
             isItems[0] = ssArgs.getPlayer().get().getItemInHand();
             ssArgs.getItems().set(isItems);
-            ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+            ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         }
         return true;
     }

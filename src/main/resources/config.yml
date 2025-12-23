@@ -30,6 +30,9 @@ MetricsEnabled: true
 # Should verbose debugging messages be enabled? This could get very spammy, or it may do nothing.
 Debugging: false
 
+# List of SignShop classes you are debugging or ALL for all of them. Not all classes have this feature. Debugging must also be set to true.
+DebugClasses: []
+
 # Use an internationally compatible currency parser that supports ',' and '.' decimal separators.  This may, but likely will not be, incompatible with existing servers.
 # This will be automatically enabled on new servers, and disabled for servers that have existing shops. (true, false or auto by Default)
 AllowCommaDecimalSeparator: auto
@@ -88,6 +91,22 @@ EnablePermits: false
 
 # Enables the Written Book fix when set to true (Default = true)
 EnableWrittenBookFix: true
+
+# Show material name in parentheses when items have custom display names (Default = true)
+# When true: "Tri Cheese Pizza" (Paper)
+# When false: "Tri Cheese Pizza"
+ShowMaterialInCustomNames: true
+
+# Show item details (lore, enchantments, book info) in chat messages (Default = true)
+# When true: Chat shows "1 Stone <Thorns V, Arrow Damage III> <Name weaves7, ...>" (current behavior)
+# When false: Chat shows only "1 Stone" (details still visible in hover tooltip if enabled)
+ShowItemDetailsInChat: true
+
+# Show hover tooltips when hovering over item names in chat (Default = true)
+# When true: Hovering over items shows a tooltip with item details
+# When false: No hover tooltips are shown
+# Note: The level of detail shown in hover tooltips depends on your server implementation
+ShowItemHovers: true
 
 # Used to allow groups of users to use shops for different amounts of money
 # A multiplier of "1.0" means the amount is the same as it is on the sign
@@ -576,9 +595,11 @@ errors:
   out_of_business: This shop appears to have gone out of business!
   out_of_stock: This shop is out of stock!
   overstocked: This shop is overstocked!
+  shop_cannot_hold_more_money: The shop cannot hold any more money!
   player_doesnt_have_items: You don't have the items! (!items)
   no_item_in_hand: You need to be holding an item for the shop to be able to take it!
-  player_overstocked: You are overstocked, either your inventory is too full, or you can't hold any more money!
+  player_overstocked: You are overstocked, your inventory is too full!
+  player_cannot_hold_more_money: You cannot hold any more money!
   sign_location_stored: Sign location stored!
   made_day: '!player has made it day!'
   made_night: '!player has made it night!'
@@ -683,6 +704,7 @@ errors:
   exceeded_max_amount_of_chests_per_shop: You have exceeded the maximum amount of chests (!maxAmountOfChests) that can be linked to a single shop. Please unlink one or more before continuing.
   this_shop_exceeded_max_amount_of_chests: Shop in world '!world' at (!x, !y, !z) exceeds the maximum amount of chests per shop!
   could_not_complete_operation: Could not complete operation, contact your System Administrator and checks the logs.
+  shop_has_incompatible_items: This shop contains incompatible items that cannot be loaded. Please contact the shop owner to recreate this shop.
   no_permission_to_inspect_shop: You do not have permission to inspect this shop.
   no_permission_to_dye_shop: You do not have permission to dye this shop.
   shop_on_sign_back_must_match_front: The back of the sign must match the front of the shop exactly, if you want it to look like a shop.

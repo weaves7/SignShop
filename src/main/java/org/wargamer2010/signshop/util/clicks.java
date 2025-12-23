@@ -9,6 +9,15 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Tracks blocks and entities selected by players for shop creation.
+ *
+ * <p>When players left-click blocks with the link material (redstone dust),
+ * those blocks are registered here. When creating a shop, these registered
+ * blocks become the shop's containables (chests) and activatables (levers).</p>
+ *
+ * @see signshopUtil#registerClickedMaterial
+ */
 public class clicks {
     public static Map<Location, Player> mClicksPerLocation = new LinkedHashMap<>();
     public static Map<PlayerIdentifier, Player> mClicksPerPlayerId = new LinkedHashMap<>();

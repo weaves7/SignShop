@@ -9,16 +9,28 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Base class for all SignShop internal events.
+ *
+ * <p>Extends Bukkit's Event system with message parts for template substitution
+ * and cancellation support. All SignShop events (creation, transaction, destruction)
+ * extend this class.</p>
+ *
+ * @see SSCreatedEvent
+ * @see SSPreTransactionEvent
+ * @see SSPostTransactionEvent
+ * @see SSMoneyTransactionEvent
+ */
 public abstract class SSEvent extends Event implements Cancellable {
     private boolean bCancelled = false;
     private boolean bCanBeCancelled = true;
-    private Map<String, String> messageParts = new HashMap<>();
+    private Map<String, Object> messageParts = new HashMap<>();
 
     public SSEvent() {
 
     }
 
-    public SSEvent(Map<String, String> pMessageParts) {
+    public SSEvent(Map<String, Object> pMessageParts) {
         messageParts = pMessageParts;
     }
 
@@ -42,12 +54,22 @@ public abstract class SSEvent extends Event implements Cancellable {
         this.bCanBeCancelled = pCanBeCancelled;
     }
 
-    public Map<String, String> getMessageParts() {
+    public Map<String, Object> getMessageParts() {
         return messageParts;
     }
 
-    public void setMessagePart(String part, String value) {
+    public void setMessagePart(String part, Object value) {
         messageParts.put(part, value);
+    }
+
+    /**
+     * Overloaded method for binary compatibility with external plugins.
+     *
+     * @param part The message part key
+     * @param value The string value
+     */
+    public void setMessagePart(String part, String value) {
+        setMessagePart(part, (Object) value);
     }
 
     @NotNull

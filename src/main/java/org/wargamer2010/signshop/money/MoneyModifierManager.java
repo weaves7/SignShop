@@ -8,6 +8,16 @@ import org.wargamer2010.signshop.player.SignShopPlayer;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Manages price modifiers applied to SignShop transactions.
+ *
+ * <p>Registers and applies modifiers like player-specific discounts and price
+ * rounding. Modifiers are applied in order during transactions.</p>
+ *
+ * @see IMoneyModifier
+ * @see PlayerPriceModifier
+ * @see RoundPriceModifier
+ */
 public class MoneyModifierManager {
     private static final List<IMoneyModifier> modifiers = new LinkedList<>();
 

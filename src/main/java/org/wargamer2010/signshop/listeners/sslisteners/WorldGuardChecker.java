@@ -22,6 +22,9 @@ import org.wargamer2010.signshop.hooks.HookManager;
 
 import java.util.logging.Level;
 
+/**
+ * Internal listener that enforces WorldGuard's allow-shop flag requirement for shop creation unless bypassed.
+ */
 public class WorldGuardChecker implements Listener {
     private static StateFlag ALLOW_SHOP_FLAG;
 

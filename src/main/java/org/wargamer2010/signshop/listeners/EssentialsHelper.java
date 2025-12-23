@@ -12,6 +12,9 @@ import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.logging.Level;
 
+/**
+ * Helper class that checks Essentials configuration for sign conflicts with SignShop.
+ */
 class EssentialsHelper {
     private static boolean essConflictFound = false;
 

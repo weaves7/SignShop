@@ -5,11 +5,15 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.player.SignShopPlayer;
+import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.itemUtil;
 import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.*;
 
+/**
+ * Shop operation that takes variable amounts of items from player based on inventory contents, with durability adjustments.
+ */
 public class takeVariablePlayerItems implements SignShopOperation {
 
     private boolean doDurabilityNullification(SignShopArguments ssArgs) {
@@ -89,12 +93,16 @@ public class takeVariablePlayerItems implements SignShopOperation {
             return false;
         }
         ssArgs.getItems().set(isTotalItems);
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         return true;
     }
 
+    /**
+     * Validates player has required items for variable-amount transactions.
+     * Runs before every variable shop operation.
+     */
     @Override
-    public Boolean checkRequirements(SignShopArguments ssArgs, Boolean activeCheck) { //TODO this takes a while
+    public Boolean checkRequirements(SignShopArguments ssArgs, Boolean activeCheck) {
         if(!ssArgs.isPlayerOnline())
             return true;
         if(ssArgs.getItems().get() == null) {
@@ -107,7 +115,7 @@ public class takeVariablePlayerItems implements SignShopOperation {
 
         SignShopPlayer ssPlayer = ssArgs.getPlayer().get();
 
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         HashMap<ItemStack[], Double> variableAmount = ssPlayer.getVirtualInventory().variableAmount(ssArgs.getItems().get());
         Double iCount = (Double)variableAmount.values().toArray()[0];
 
@@ -124,11 +132,18 @@ public class takeVariablePlayerItems implements SignShopOperation {
         }
 
         ssArgs.getItems().set(isActual);
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         if(iCount != 0.0d)
             ssArgs.getPrice().set(ssArgs.getPrice().get() * iCount * pricemod);
         else
             ssArgs.getPrice().set(ssArgs.getPrice().get() * pricemod);
+
+        // Cache calculated items and final price in messageParts (transient, survives reset())
+        // No serialization needed - messageParts stores Objects directly
+        if(iCount != 0.0d && isActual != null && isActual.length > 0) {
+            ssArgs.setMessagePart("_takeVarItems_cached", isActual);
+            ssArgs.setMessagePart("_takeVarItems_finalPrice", ssArgs.getPrice().get());
+        }
 
         if(iCount == 0.0d) {
             ssArgs.sendFailedRequirementsMessage("player_doesnt_have_items");
@@ -137,8 +152,36 @@ public class takeVariablePlayerItems implements SignShopOperation {
         return true;
     }
 
+    /**
+     * Executes variable-amount item transfer from player to shop.
+     * Core operation executed on every variable shop use.
+     */
     @Override
-    public Boolean runOperation(SignShopArguments ssArgs) {//TODO this takes a while
+    public Boolean runOperation(SignShopArguments ssArgs) {
+        // Use cached calculations if available (avoids duplicate work after reset)
+        if(ssArgs.hasMessagePart("_takeVarItems_cached")) {
+            ItemStack[] cachedItems = (ItemStack[]) ssArgs.getRawMessageParts().get("_takeVarItems_cached");
+            Double cachedPrice = (Double) ssArgs.getRawMessageParts().get("_takeVarItems_finalPrice");
+
+            if(cachedItems != null && cachedItems.length > 0 && cachedPrice != null) {
+                ssArgs.getItems().set(cachedItems);
+                ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(cachedItems));
+
+                // Restore the final calculated price (reset() cleared it back to root)
+                ssArgs.getPrice().set(cachedPrice);
+
+                // Execute transfer
+                boolean transactedAll = ssArgs.getPlayer().get()
+                    .takePlayerItems(ssArgs.getItems().get()).isEmpty();
+                if(!transactedAll)
+                    ssArgs.getPlayer().get().sendMessage(
+                        SignShop.getInstance().getSignShopConfig().getError(
+                            "could_not_complete_operation", null));
+                return transactedAll;
+            }
+        }
+
+        // FALLBACK: Cache miss - recalculate (safety net)
         if(!checkRequirements(ssArgs, true))
             return false;
         boolean transactedAll = ssArgs.getPlayer().get().takePlayerItems(ssArgs.getItems().get()).isEmpty();

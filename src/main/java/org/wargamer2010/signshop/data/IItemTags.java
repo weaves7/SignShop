@@ -1,8 +1,11 @@
 
-package org.wargamer2010.signshop.blocks;
+package org.wargamer2010.signshop.data;
 
 import org.bukkit.Material;
 
+/**
+ * Interface for item tag copying operations.
+ */
 public interface IItemTags {
     org.bukkit.inventory.ItemStack copyTags(org.bukkit.inventory.ItemStack from, org.bukkit.inventory.ItemStack to);
 

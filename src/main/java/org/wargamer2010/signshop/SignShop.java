@@ -12,12 +12,12 @@ import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.FileUtil;
 import org.jetbrains.annotations.NotNull;
-import org.wargamer2010.signshop.blocks.SignShopBooks;
-import org.wargamer2010.signshop.blocks.SignShopItemMeta;
+import org.wargamer2010.signshop.data.SignShopBooks;
+import org.wargamer2010.signshop.data.SignShopItemMeta;
 import org.wargamer2010.signshop.commands.*;
 import org.wargamer2010.signshop.configuration.ColorUtil;
 import org.wargamer2010.signshop.configuration.SignShopConfig;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.configuration.configUtil;
 import org.wargamer2010.signshop.listeners.*;
 import org.wargamer2010.signshop.listeners.sslisteners.*;
@@ -38,9 +38,48 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.*;
 
+/**
+ * Main plugin class for SignShop - a Spigot/Bukkit plugin that enables creation of physical shops
+ * using signs and chests. Players can buy/sell items, execute commands, control redstone, and more
+ * by interacting with signs linked to chests.
+ *
+ * <p><b>Plugin Lifecycle:</b></p>
+ * <ul>
+ *   <li>{@link #onLoad()} - Registers WorldGuard flags before WorldGuard initialization</li>
+ *   <li>{@link #onEnable()} - Main initialization: config, storage, vault, events, listeners</li>
+ *   <li>{@link #onDisable()} - Cleanup: save data, close handlers, stop timers</li>
+ * </ul>
+ *
+ * <p><b>Singleton Pattern:</b></p>
+ * Access the plugin instance via {@link #getInstance()} from anywhere in the codebase.
+ *
+ * <p><b>Core Systems:</b></p>
+ * <ul>
+ *   <li><b>Configuration:</b> {@link SignShopConfig} - Loads config.yml, operation definitions, sign types</li>
+ *   <li><b>Storage:</b> {@link Storage} - Manages all shops in memory and persistence to sellers.yml</li>
+ *   <li><b>Vault Integration:</b> {@link Vault} - Economy and permissions via Vault API (hard dependency)</li>
+ *   <li><b>Commands:</b> {@link CommandDispatcher} - Routes /signshop subcommands to handlers</li>
+ *   <li><b>Timing:</b> {@link TimeManager} - Manages delayed/timed commands and expiration</li>
+ * </ul>
+ *
+ * <p><b>Debugging:</b></p>
+ * Enable verbose logging with {@code Debugging: true} in config.yml. Use {@link #debugMessage(String)}
+ * for general debug output or {@link #debugClassMessage(String, String)} for class-specific debugging
+ * controlled by {@code DebugClasses} config option.
+ *
+ * <p><b>Transaction Logging:</b></p>
+ * When {@code TransactionLog: true}, all shop transactions are logged to Transaction.log with
+ * customer, owner, operation, items, and price details via {@link #logTransaction}.
+ *
+ * @see SignShopConfig
+ * @see Storage
+ * @see Vault
+ * @see CommandDispatcher
+ * @see TimeManager
+ */
 public class SignShop extends JavaPlugin {
     private static final int CONFIG_VERSION_DO_NOT_TOUCH = 4;
-    public static final int DATA_VERSION = 3;
+    public static final int DATA_VERSION = 4;
     private static final Logger logger = Logger.getLogger("Minecraft");
     private static final Logger transactionlogger = Logger.getLogger("SignShop_Transactions");
     public static WorthHandler worthHandler;
@@ -79,6 +118,12 @@ public class SignShop extends JavaPlugin {
     public void debugMessage(String message) {
         if (getSignShopConfig().debugging()) {
             log(message, Level.INFO);
+        }
+    }
+
+    public void debugClassMessage(String message, String className) {
+        if (getSignShopConfig().debugging() && getSignShopConfig().weAreDebuggingClass(className.toUpperCase())){
+            log(className+": "+message, Level.INFO);
         }
     }
 
@@ -240,10 +285,13 @@ public class SignShop extends JavaPlugin {
         }
         if (getSignShopConfig().debugging()) {
             SignShop.log("Debugging enabled.", Level.INFO);
+            SignShop.log("Debugging Classe(s): "+signShopConfig.getDebugClasses(),Level.INFO);
         }
 
+        debugClassMessage("This is an example class message.",this.getName());
+
         //Warn if spawn-protection is enabled
-        if(Bukkit.getSpawnRadius() > 0 && Bukkit.getOperators().size() > 0){
+        if(Bukkit.getSpawnRadius() > 0 && !Bukkit.getOperators().isEmpty()){
             int opsCount = Bukkit.getOperators().size();
             String opsPhrase = (opsCount > 1) ? ("are " + opsCount + " ops!") : ("is " + opsCount + " op!");
             log("Spawn-Protection is set to " + Bukkit.getSpawnRadius() + " in server.properties and there " + opsPhrase, Level.WARNING);
@@ -329,9 +377,12 @@ public class SignShop extends JavaPlugin {
         pm.registerEvents(new MoneyModifierListener(), this);
         pm.registerEvents(new SignSidesValidator(),this);
 
-        DynmapManager dmm = new DynmapManager();
-        if (getSignShopConfig().getEnableDynmapSupport())
+        // Dynmap integration (modern API listener pattern for Dynmap 3.0+)
+        if (getSignShopConfig().getEnableDynmapSupport() && this.getServer().getPluginManager().isPluginEnabled("Dynmap")) {
+            DynmapManager dmm = new DynmapManager();
             pm.registerEvents(dmm, this);
+        }
+
         if (getSignShopConfig().getEnableShopPlotSupport()) {
             if (this.getServer().getPluginManager().isPluginEnabled("WorldGuard")) {
                 pm.registerEvents(new WorldGuardChecker(), this);

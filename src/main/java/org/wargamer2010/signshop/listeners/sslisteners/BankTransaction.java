@@ -21,6 +21,12 @@ import java.util.List;
 
 import static org.wargamer2010.signshop.util.signshopUtil.getSignsFromMisc;
 
+/**
+ * Handles Vault economy integration for SignShop transactions.
+ *
+ * <p>Responds to {@link SSMoneyTransactionEvent} to check balances and
+ * execute money transfers through the Vault economy provider.</p>
+ */
 public class BankTransaction implements Listener {
     private static List<String> getBanks(Seller seller) {
         List<Block> bankSigns = getSignsFromMisc(seller, "banksigns");

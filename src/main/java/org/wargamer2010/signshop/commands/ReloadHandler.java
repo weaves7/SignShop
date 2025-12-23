@@ -12,6 +12,10 @@ import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.logging.Level;
 
+/**
+ * Command handler for /signshop reload.
+ * Reloads configuration files and dependent plugins without requiring server restart.
+ */
 public class ReloadHandler implements ICommandHandler {
     private static final ICommandHandler instance = new ReloadHandler();
 

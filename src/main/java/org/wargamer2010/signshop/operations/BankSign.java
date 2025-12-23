@@ -5,12 +5,15 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.block.sign.Side;
 import org.wargamer2010.signshop.SignShop;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Shop operation that registers bank signs for routing profits to external accounts.
+ */
 public class BankSign implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {
@@ -29,7 +32,7 @@ public class BankSign implements SignShopOperation {
         } else {
             StringBuilder profitshops = new StringBuilder();
             boolean first = true;
-            Block bLast = shops.get(shops.size()-1);
+            Block bLast = shops.getLast();
             for(Block bTemp : shops) {
                 Location loc = bTemp.getLocation();
                 if(first) first = false;
@@ -45,10 +48,10 @@ public class BankSign implements SignShopOperation {
             if(!signshopUtil.lineIsEmpty(lines[1])) names.add(lines[1]);
             if(!signshopUtil.lineIsEmpty(lines[2])) names.add(lines[2]);
             first = true;
-            String sLast = names.get(names.size()-1);
+            String sLast = names.getLast();
             for(String sTemp : names) {
                 if(first) first = false;
-                else if (!sLast.equals(sTemp)) profits.append(", ");//TODO fix this
+                else if (!sLast.equals(sTemp)) profits.append(", ");
                 else if (sLast.equals(sTemp)) profits.append(" and ");
                 profits.append(sTemp);
             }

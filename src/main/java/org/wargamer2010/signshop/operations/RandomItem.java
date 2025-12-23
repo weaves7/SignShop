@@ -2,10 +2,15 @@ package org.wargamer2010.signshop.operations;
 
 import org.bukkit.inventory.ItemStack;
 import org.wargamer2010.signshop.SignShop;
+import org.wargamer2010.signshop.util.ItemMessagePart;
 import org.wargamer2010.signshop.util.itemUtil;
 
 import java.util.Random;
 
+/**
+ * Shop operation that randomly selects one item from the shop chest to give.
+ * Used for gambling-style shops like slot machines.
+ */
 public class RandomItem implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {
@@ -29,7 +34,7 @@ public class RandomItem implements SignShopOperation {
         ItemStack[] isRandoms = new ItemStack[1];
         isRandoms[0] = isRandom;
         ssArgs.getItems().set(isRandoms);
-        ssArgs.setMessagePart("!items", itemUtil.itemStackToString(ssArgs.getItems().get()));
+        ssArgs.setMessagePart("!items", ItemMessagePart.fromItems(ssArgs.getItems().get()));
         return true;
     }
 }

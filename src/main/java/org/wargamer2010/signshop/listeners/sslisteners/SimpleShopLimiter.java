@@ -1,4 +1,3 @@
-
 package org.wargamer2010.signshop.listeners.sslisteners;
 
 import org.bukkit.ChatColor;
@@ -13,6 +12,9 @@ import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.List;
 
+/**
+ * Internal listener that enforces per-player shop limits and maximum distance restrictions for shop creation.
+ */
 public class SimpleShopLimiter implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)

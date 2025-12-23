@@ -9,6 +9,9 @@ import org.wargamer2010.signshop.Vault;
 
 import java.util.logging.Level;
 
+/**
+ * Listener that hooks into Vault's economy system after all plugins have loaded on server startup.
+ */
 public class ServerLoadedListener implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL)

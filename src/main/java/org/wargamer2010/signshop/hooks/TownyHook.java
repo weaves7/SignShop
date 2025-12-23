@@ -3,6 +3,9 @@ package org.wargamer2010.signshop.hooks;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
+/**
+ * Towny integration hook for checking build permissions in towns and wilderness.
+ */
 public class TownyHook implements Hook {
 
     @Override

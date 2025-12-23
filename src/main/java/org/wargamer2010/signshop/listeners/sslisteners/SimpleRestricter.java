@@ -1,4 +1,3 @@
-
 package org.wargamer2010.signshop.listeners.sslisteners;
 
 import org.bukkit.event.EventHandler;
@@ -8,6 +7,9 @@ import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.events.SSPreTransactionEvent;
 import org.wargamer2010.signshop.util.signshopUtil;
 
+/**
+ * Internal listener that restricts shop usage based on RestrictedSign metadata to enforce player restrictions.
+ */
 public class SimpleRestricter implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)

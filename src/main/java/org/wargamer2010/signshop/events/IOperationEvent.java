@@ -25,8 +25,8 @@ public interface IOperationEvent extends Cancellable, IMessagePartContainer {
     ItemStack[] getItems();
 
     @Override
-    Map<String, String> getMessageParts();
+    Map<String, Object> getMessageParts();
 
     @Override
-    void setMessagePart(String part, String value);
+    void setMessagePart(String part, Object value);
 }

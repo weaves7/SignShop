@@ -7,6 +7,9 @@ import org.wargamer2010.signshop.events.SSMoneyRequestType;
 import org.wargamer2010.signshop.events.SSMoneyTransactionEvent;
 import org.wargamer2010.signshop.util.economyUtil;
 
+/**
+ * Shop operation that takes money from the shop owner's account via Vault economy.
+ */
 public class takeOwnerMoney implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

@@ -15,6 +15,21 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
 
+/**
+ * Utility methods for command handling, message routing, and help text generation.
+ *
+ * <p>Provides helpers for the /signshop command system including message formatting,
+ * subcommand list generation, and routing between console and player output.</p>
+ *
+ * <h2>Key Functionality:</h2>
+ * <ul>
+ *   <li>{@link #sendToPlayerOrConsole(String, SignShopPlayer)} - Routes messages appropriately</li>
+ *   <li>{@link #getAllCommands()} - Generates full command help text</li>
+ *   <li>{@link #handleCommand} - Routes commands to the CommandDispatcher</li>
+ * </ul>
+ *
+ * @see org.wargamer2010.signshop.commands.CommandDispatcher
+ */
 public class commandUtil {
     private static final String RootCommand = "signshop";
 
@@ -46,7 +61,7 @@ public class commandUtil {
 
         StringBuilder rootBuilder = new StringBuilder(preCommands.length * 25);
         for(String pre : preCommands) {
-            if(rootBuilder.length() == 0) {
+            if(rootBuilder.isEmpty()) {
                 rootBuilder.append("/");
                 rootBuilder.append(RootCommand);
             }

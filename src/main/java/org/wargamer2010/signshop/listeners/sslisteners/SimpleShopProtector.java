@@ -14,7 +14,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.wargamer2010.signshop.Seller;
 import org.wargamer2010.signshop.SignShop;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.events.SSCreatedEvent;
 import org.wargamer2010.signshop.events.SSDestroyedEvent;
 import org.wargamer2010.signshop.events.SSDestroyedEventType;
@@ -34,6 +34,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Internal listener that protects shop signs and blocks from unauthorized destruction and handles automatic chest locking.
+ */
 public class SimpleShopProtector implements Listener {
     private Boolean canDestroy(Player player, Block bBlock) {
         SignShopPlayer ssPlayer = PlayerCache.getPlayer(player);
@@ -51,13 +54,13 @@ public class SimpleShopProtector implements Listener {
             String temp = seller.getMisc(miscname);
             temp = temp.replace(signshopUtil.convertLocationToString(block.getLocation()), "");
             temp = temp.replace(SignShopArguments.separator +SignShopArguments.separator, SignShopArguments.separator);
-            if(temp.length() > 0) {
+            if(!temp.isEmpty()) {
                 if(temp.endsWith(SignShopArguments.separator))
                     temp = temp.substring(0, temp.length()-1);
                 if(temp.length() > 1 && temp.charAt(0) == SignShopArguments.separator.charAt(0))
                     temp = temp.substring(1);
             }
-            if(temp.length() == 0)
+            if(temp.isEmpty())
                 seller.removeMisc(miscname);
             else
                 seller.addMisc(miscname, temp);
@@ -134,7 +137,7 @@ public class SimpleShopProtector implements Listener {
             signshopUtil.fixCreativeModeSignRendering(event.getBlock(), event.getPlayer().getPlayer());
 
             if (event.getShop().isOwner(player) || event.getPlayer().isOp() || player.hasPerm("Signshop.Destroy.Others", true)) {
-                Map<String, String> temp = new LinkedHashMap<>();
+                Map<String, Object> temp = new LinkedHashMap<>();
                 temp.put("!destroymaterial", signshopUtil.capFirstLetter(SignShop.getInstance().getSignShopConfig().getDestroyMaterial().name().toLowerCase()));
 
                 event.getPlayer().sendMessage(SignShop.getInstance().getSignShopConfig().getError("use_item_to_destroy_shop", temp));

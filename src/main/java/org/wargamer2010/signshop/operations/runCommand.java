@@ -7,6 +7,9 @@ import org.wargamer2010.signshop.player.SignShopPlayer;
 
 import java.util.List;
 
+/**
+ * Shop operation that executes configurable commands from config.yml when the shop is used.
+ */
 public class runCommand implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {
@@ -31,7 +34,7 @@ public class runCommand implements SignShopOperation {
             for (String command : commands) {
                 boolean ok = true;
                 String sCommand = command;
-                if (sCommand != null && sCommand.length() > 0) {
+                if (sCommand != null && !sCommand.isEmpty()) {
                     sCommand = SignShop.getInstance().getSignShopConfig().fillInBlanks(sCommand, ssArgs.getMessageParts());
                     sCommand = SignShop.getInstance().getSignShopConfig().fillInBlanks(sCommand, ssArgs.getMessageParts());
                     if (ssArgs.isOperationParameter("asOriginalUser")) {

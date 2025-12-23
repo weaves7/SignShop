@@ -11,6 +11,9 @@ import com.sk89q.worldguard.protection.regions.RegionQuery;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 
+/**
+ * WorldGuard integration hook that checks build permissions using WorldGuard's region protection system.
+ */
 public class WorldGuardHook implements Hook  {
 
     @Override

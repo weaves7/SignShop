@@ -7,7 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.wargamer2010.signshop.Seller;
 import org.wargamer2010.signshop.SignShop;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.events.SSCreatedEvent;
 import org.wargamer2010.signshop.events.SSEventFactory;
 import org.wargamer2010.signshop.events.SSLinkEvent;
@@ -24,6 +24,10 @@ import org.wargamer2010.signshop.util.signshopUtil;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Special operation that links or unlinks additional chests and activatable blocks to an existing shop.
+ * Allows shop owners to expand storage or add redstone blocks after initial shop creation.
+ */
 public class LinkAdditionalBlocks implements SignShopSpecialOp {
 
     private List<Block> updateList(final List<Block> masterBlocks, final List<Block> blocksToUpdate, final SignShopPlayer ssPlayer, final Seller pSeller) {

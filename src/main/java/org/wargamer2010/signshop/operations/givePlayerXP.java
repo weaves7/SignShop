@@ -3,6 +3,10 @@ package org.wargamer2010.signshop.operations;
 import org.wargamer2010.essentials.SetExpFix;
 import org.wargamer2010.signshop.util.signshopUtil;
 
+/**
+ * Operation that grants experience points to the player.
+ * Amount is specified on sign line 3, supports both raw XP and level-based modes.
+ */
 public class givePlayerXP implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

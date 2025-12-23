@@ -3,7 +3,7 @@ package org.wargamer2010.signshop.player;
 
 import org.bukkit.plugin.Plugin;
 import org.wargamer2010.signshop.SignShop;
-import org.wargamer2010.signshop.blocks.SSDatabase;
+import org.wargamer2010.signshop.data.SSDatabase;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -13,6 +13,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
+/**
+ * Persistent metadata storage for SignShop players.
+ *
+ * <p>Stores player-specific data (e.g., tutorial dismissals, one-time shop usage)
+ * in a SQLite database (player.db). Data persists across server restarts.</p>
+ */
 public class PlayerMetadata {
     private static final String filename = "player.db";
     private final SignShopPlayer ssPlayer;
@@ -77,7 +83,7 @@ public class PlayerMetadata {
             }
             set.close();
 
-            if (toConverts.size() > 0) {
+            if (!toConverts.isEmpty()) {
                 SignShop.log("Starting conversion from Player name to UUID for PlayerMeta table. Please be patient and don't interrupt the process.", Level.INFO);
             }
 

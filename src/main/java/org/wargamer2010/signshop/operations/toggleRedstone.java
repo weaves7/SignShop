@@ -6,6 +6,9 @@ import org.bukkit.block.data.type.Switch;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.util.signshopUtil;
 
+/**
+ * Shop operation that toggles the power state of linked lever blocks.
+ */
 public class toggleRedstone implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

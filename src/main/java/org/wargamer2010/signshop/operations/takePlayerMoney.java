@@ -7,6 +7,10 @@ import org.wargamer2010.signshop.events.SSMoneyRequestType;
 import org.wargamer2010.signshop.events.SSMoneyTransactionEvent;
 import org.wargamer2010.signshop.util.economyUtil;
 
+/**
+ * Operation that withdraws money from the player's account.
+ * Used in buy shops and service shops where players pay for goods or services.
+ */
 public class takePlayerMoney implements SignShopOperation {
     @Override
     public Boolean setupOperation(SignShopArguments ssArgs) {

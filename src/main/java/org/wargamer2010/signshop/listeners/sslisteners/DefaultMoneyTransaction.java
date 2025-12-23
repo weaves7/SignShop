@@ -7,6 +7,9 @@ import org.wargamer2010.signshop.events.SSMoneyRequestType;
 import org.wargamer2010.signshop.events.SSMoneyTransactionEvent;
 import org.wargamer2010.signshop.player.SignShopPlayer;
 
+/**
+ * Internal listener that handles default money transactions between players and shop owners using Vault economy.
+ */
 public class DefaultMoneyTransaction implements Listener {
     @EventHandler(priority = EventPriority.MONITOR)
     public void onSSMoneyTransaction(SSMoneyTransactionEvent event) {
@@ -23,7 +26,7 @@ public class DefaultMoneyTransaction implements Listener {
             switch(event.getTransactionType()) {
                 case GiveToOwner:
                     if (ssOwner.canNotHaveMoney(event.getPrice())) {
-                        event.sendFailedRequirementsMessage("overstocked");
+                        event.sendFailedRequirementsMessage("shop_cannot_hold_more_money");
                         event.setCancelled(true);
                     }
                 break;
@@ -35,7 +38,7 @@ public class DefaultMoneyTransaction implements Listener {
                 break;
                 case GiveToPlayer:
                     if (event.getPlayer().canNotHaveMoney(event.getPrice())) {
-                        event.sendFailedRequirementsMessage("player_overstocked");
+                        event.sendFailedRequirementsMessage("player_cannot_hold_more_money");
                         event.setCancelled(true);
                     }
                 break;

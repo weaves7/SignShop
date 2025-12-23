@@ -7,7 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.wargamer2010.signshop.Seller;
 import org.wargamer2010.signshop.SignShop;
-import org.wargamer2010.signshop.configuration.Storage;
+import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.events.SSCreatedEvent;
 import org.wargamer2010.signshop.events.SSEventFactory;
 import org.wargamer2010.signshop.operations.SignShopArguments;
@@ -22,6 +22,10 @@ import org.wargamer2010.signshop.util.signshopUtil;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * Special operation that updates the items stored in an existing shop.
+ * Triggered when shop owner uses the update material on a shop sign with new chest contents.
+ */
 public class ChangeShopItems implements SignShopSpecialOp {
 
     @Override
@@ -89,7 +93,7 @@ public class ChangeShopItems implements SignShopSpecialOp {
             return true;
         }
 
-        Storage.get().updateSeller(bClicked, seller.getContainables(), seller.getActivatables(), ssArgs.getItems().get());
+        Storage.get().updateSeller(bClicked, seller.getContainables(), seller.getActivatables(), ssArgs.getItems().get(), ssArgs.miscSettings);
 
         if (!ssArgs.bDoNotClearClickmap) {
             clicks.removePlayerFromClickmap(player);

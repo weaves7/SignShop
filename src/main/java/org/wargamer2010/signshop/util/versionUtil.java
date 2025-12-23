@@ -7,6 +7,20 @@ import org.wargamer2010.signshop.SignShop;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 
+/**
+ * Bukkit/Spigot version detection and compatibility checking.
+ *
+ * <p>Parses the Bukkit version string to determine API compatibility level.
+ * Results are cached for performance since version doesn't change at runtime.</p>
+ *
+ * <h2>Version Categories:</h2>
+ * <ul>
+ *   <li><b>Pre145:</b> Bukkit 1.4.5-R0.2 and earlier (no ItemMeta support)</li>
+ *   <li><b>Post145:</b> Bukkit 1.4.5-R0.3+ (modern API with ItemMeta)</li>
+ * </ul>
+ *
+ * @see SSBukkitVersion
+ */
 public class versionUtil {
     private static SSBukkitVersion cachedVersion = SSBukkitVersion.TBD;
 

@@ -21,6 +21,57 @@ import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.util.*;
 
+/**
+ * Mutable context container passed through the SignShop operation pipeline.
+ *
+ * <p>SignShopArguments is the central data object for all shop operations. It carries
+ * transaction state through the three operation phases: {@code setupOperation},
+ * {@code checkRequirements}, and {@code runOperation}. Each operation can read and
+ * modify values, enabling complex multi-operation workflows.</p>
+ *
+ * <h2>Operation Pipeline:</h2>
+ * <pre>
+ * Player clicks shop sign
+ *     ↓
+ * SignShopArguments created with initial values
+ *     ↓
+ * For each operation in config:
+ *   1. setupOperation(ssArgs) - Shop creation phase
+ *   2. checkRequirements(ssArgs, true) - Validation phase
+ *   3. runOperation(ssArgs) - Execution phase
+ *     ↓
+ * Transaction complete
+ * </pre>
+ *
+ * <h2>Argument Types ({@link SignShopArgumentsType}):</h2>
+ * <ul>
+ *   <li><b>Setup:</b> Creating a new shop (linking sign to chests)</li>
+ *   <li><b>Check:</b> Validating transaction requirements (money, stock, permissions)</li>
+ *   <li><b>Run:</b> Executing the actual transaction (transfer items, money)</li>
+ * </ul>
+ *
+ * <h2>Root vs Current Values:</h2>
+ * <p>Uses {@link SignShopArgument} wrapper with root/current value pattern:
+ * <ul>
+ *   <li><b>Root:</b> Original value set at creation, preserved across {@link #reset()}</li>
+ *   <li><b>Current:</b> Modified value, may change during operation execution</li>
+ * </ul>
+ * This enables operations to modify values temporarily while preserving originals.</p>
+ *
+ * <h2>Message Parts:</h2>
+ * <p>The {@code messageParts} map stores values for message template substitution.
+ * Operations populate this for error messages and transaction confirmations.
+ * Example: {@code %price%, %itemname%, %amount%}</p>
+ *
+ * <h2>Misc Settings:</h2>
+ * <p>The {@code miscSettings} map stores shop-specific configuration (e.g., Trade shop
+ * items, price multipliers, custom messages). Persisted to sellers.yml.</p>
+ *
+ * @see SignShopOperation
+ * @see SignShopArgumentsType
+ * @see SignShopArgument
+ * @see IMessagePartContainer
+ */
 public class SignShopArguments implements IMessagePartContainer {
     public static String separator = "~";
     public Map<String, String> miscSettings = new HashMap<>();
@@ -28,6 +79,8 @@ public class SignShopArguments implements IMessagePartContainer {
     public boolean bDoNotClearClickmap = false;
     public boolean bPriceModApplied = false;
     public boolean bRunCommandAsUser = false;
+    // Reference to seller for accessing cached deserialized items
+    private Seller seller = null;
     private final SignShopArgument<Double> fPrice = new SignShopArgument<>(this);
     private final SignShopArgument<List<Block>> containables = new SignShopArgument<>(this);
     private final SignShopArgument<List<Block>> activatables = new SignShopArgument<>(this);
@@ -50,7 +103,7 @@ public class SignShopArguments implements IMessagePartContainer {
         }
     };
     private SSMoneyEventType moneyEventType = SSMoneyEventType.Unknown;
-    private final Map<String, String> messageParts = new LinkedHashMap<>();
+    private final Map<String, Object> messageParts = new LinkedHashMap<>();
 
     public SignShopArguments(double pfPrice, ItemStack[] pisItems, List<Block> pContainables, List<Block> pActivatables,
                              SignShopPlayer pssPlayer, SignShopPlayer pssOwner, Block pbSign, String psOperation, BlockFace pbfBlockFace, Action ac, SignShopArgumentsType type) {
@@ -66,10 +119,10 @@ public class SignShopArguments implements IMessagePartContainer {
         aAction.setRoot(ac);
         argumentType = type;
         setDefaultMessageParts();
-        fixBooks();
     }
 
     public SignShopArguments(Seller seller, SignShopPlayer player, SignShopArgumentsType type) {
+        this.seller = seller;  // Store seller reference for cached item access
         if (seller.getSign().getState() instanceof Sign)
             fPrice.setRoot(economyUtil.parsePrice(((Sign) seller.getSign().getState()).getSide(Side.FRONT).getLine(3)));
 
@@ -84,33 +137,14 @@ public class SignShopArguments implements IMessagePartContainer {
         bfBlockFace.setRoot(BlockFace.SELF);
         argumentType = type;
         setDefaultMessageParts();
-        fixBooks();
     }
+    
 
-    private void fixBooks() {//TODO Do we even need to fix books anymore? This adds several millis to each ssArgs creation.
-        if (!SignShop.getInstance().getSignShopConfig().getEnableWrittenBookFix())
-            return; //Don't do the rest if we aren't even doing this.
-        if (isItems.getRoot() != null) {
-            itemUtil.fixBooks(isItems.getRoot());
-        }
-        if (containables.getRoot() != null) {
-            itemUtil.fixBooks(itemUtil.getAllItemStacksForContainables(containables.getRoot()));
-        }
-        SignShopPlayer ssPlayerRoot = ssPlayer.getRoot();
-        if (ssPlayerRoot != null && ssPlayerRoot.getPlayer() != null) {
-            if (ssPlayerRoot.getItemInHand() != null) {
-                ItemStack[] stacks = new ItemStack[1];
-                stacks[0] = ssPlayerRoot.getItemInHand();
-                itemUtil.fixBooks(stacks);
-            }
-
-            ItemStack[] inventory = ssPlayerRoot.getInventoryContents();//TODO this already calls fixbooks
-            itemUtil.fixBooks(inventory);
-            ssPlayerRoot.setInventoryContents(inventory);
-        }
-    }
-
-    private void setDefaultMessageParts() {//TODO this is a bit slow
+    /**
+     * Initializes default message placeholders for shop operations.
+     * Called during SignShopArguments construction - executed on every shop interaction.
+     */
+    private void setDefaultMessageParts() {
         if (ssPlayer.get() != null) {
             setMessagePart("!customer", ssPlayer.get().getName());
             setMessagePart("!player", ssPlayer.get().getName());
@@ -143,7 +177,7 @@ public class SignShopArguments implements IMessagePartContainer {
         }
 
         if (isItems.get() != null && isItems.get().length > 0) {
-            setMessagePart("!items", itemUtil.itemStackToString(isItems.get()));
+            setMessagePart("!items", org.wargamer2010.signshop.util.ItemMessagePart.fromItems(isItems.get()));
         }
     }
 
@@ -222,7 +256,7 @@ public class SignShopArguments implements IMessagePartContainer {
     }
 
     public String getFirstOperationParameter() {
-        return hasOperationParameters() ? operationParameters.get(0) : "";
+        return hasOperationParameters() ? operationParameters.getFirst() : "";
     }
 
     public SignShopArgumentsType getArgumentType() {
@@ -231,6 +265,14 @@ public class SignShopArguments implements IMessagePartContainer {
 
     public void setArgumentType(SignShopArgumentsType argumentType) {
         this.argumentType = argumentType;
+    }
+
+    public Seller getSeller() {
+        return seller;
+    }
+
+    public void setSeller(Seller seller) {
+        this.seller = seller;
     }
 
     public SSMoneyEventType getMoneyEventType() {
@@ -265,28 +307,54 @@ public class SignShopArguments implements IMessagePartContainer {
         return (bPriceModApplied = true);
     }
 
-    public void setMessagePart(String name, String value) {
+    @Override
+    public void setMessagePart(String name, Object value) {
         messageParts.put(name, value);
         if (forceMessageKeys.containsKey(name))
             name = forceMessageKeys.get(name);
         messageParts.put(name, value);
     }
 
+    /**
+     * Overloaded method for binary compatibility with external plugins.
+     * Plugins compiled against older versions expect this signature.
+     *
+     * @param name The message part key
+     * @param value The string value
+     */
+    public void setMessagePart(String name, String value) {
+        setMessagePart(name, (Object) value);
+    }
+
     public boolean hasMessagePart(String name) {
         return messageParts.containsKey(name);
     }
 
+    /**
+     * Gets a message part as a string. If the value is an ItemMessagePart,
+     * returns its cached string representation.
+     *
+     * @param name The message part name
+     * @return The string value, or empty string if not found
+     */
     public String getMessagePart(String name) {
-        if (hasMessagePart(name))
-            return messageParts.get(name);
+        if (hasMessagePart(name)) {
+            Object value = messageParts.get(name);
+            if (value instanceof String) {
+                return (String) value;
+            } else if (value instanceof org.wargamer2010.signshop.util.ItemMessagePart) {
+                return ((org.wargamer2010.signshop.util.ItemMessagePart) value).getString();
+            }
+        }
         return "";
     }
 
-    public Map<String, String> getMessageParts() {
+    @Override
+    public Map<String, Object> getMessageParts() {
         return Collections.unmodifiableMap(messageParts);
     }
 
-    public Map<String, String> getRawMessageParts() {
+    public Map<String, Object> getRawMessageParts() {
         return messageParts;
     }
 }
