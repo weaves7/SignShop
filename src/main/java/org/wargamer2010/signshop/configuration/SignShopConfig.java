@@ -201,6 +201,7 @@ public class SignShopConfig {
         setupBlacklist();
         setupBackOfSignTextBlacklist();
         copyFileFromJar("materials.yml", false);
+        copyFileFromJar("meta.yml", false);
         copyFileFromJar("SSQuickReference.pdf", true);
         setupOperations();
         fixIncompleOperations();
@@ -212,6 +213,10 @@ public class SignShopConfig {
 
     public String getPreferredLanguage() {
         return preferedLanguage;
+    }
+
+    public String getLanguages() {
+        return Languages;
     }
 
     private void setupHooks() {

@@ -14,6 +14,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.configuration.ColorUtil;
+import org.wargamer2010.signshop.configuration.MetaFormats;
 import org.wargamer2010.signshop.util.SSTimeUtil;
 import org.wargamer2010.signshop.util.itemUtil;
 import org.wargamer2010.signshop.util.signshopUtil;
@@ -123,7 +124,7 @@ public class SignShopItemMeta {
         if (stack.getItemMeta() instanceof Damageable) {
             Damageable damageable = (Damageable) stack.getItemMeta();
             if(stack.getType().getMaxDurability() >= 30 && damageable.hasDamage())
-                displayname = (" Damaged " + displayname);
+                displayname = (MetaFormats.get("damaged-prefix") + displayname);
         }
         if(includeEnchantments && !stack.getEnchantments().isEmpty())
             displayname += (txtcolor + " " + itemUtil.enchantmentsToMessageFormat(stack.getEnchantments()));
@@ -154,7 +155,7 @@ public class SignShopItemMeta {
                 }
             } else if(type == MetaType.LeatherArmor) {
                 LeatherArmorMeta leathermeta = (LeatherArmorMeta) meta;
-                return (ColorUtil.getColorAsString(leathermeta.getColor()) + " Colored " + getDisplayName(stack, getTextColor(), includeEnchantments));
+                return (ColorUtil.getColorAsString(leathermeta.getColor()) + MetaFormats.get("colored-suffix") + getDisplayName(stack, getTextColor(), includeEnchantments));
             } else if(type == MetaType.Skull) {
                 SkullMeta skullmeta = (SkullMeta) meta;
 
@@ -168,7 +169,7 @@ public class SignShopItemMeta {
                     if (skullmeta.getOwningPlayer() != null) {
                         String playerName = skullmeta.getOwningPlayer().getName();
                         if (playerName != null && !playerName.isEmpty()) {
-                            return playerName + "'s Head";
+                            return playerName + MetaFormats.get("player-head-suffix");
                         }
                     }
                 } catch (NoSuchElementException e) {
@@ -187,7 +188,7 @@ public class SignShopItemMeta {
                 // Check if it's a custom texture head
                 try {
                     if (skullmeta.hasOwner() || skullmeta.getOwnerProfile() != null) {
-                        return "Custom Player Head";
+                        return MetaFormats.get("custom-head");
                     }
                 } catch (Exception ignored) {
                     // Continue to fallback
@@ -254,20 +255,20 @@ public class SignShopItemMeta {
 
                 if(fireworkmeta.hasEffects()) {
                     namebuilder.append(" (");
-                    namebuilder.append("Duration : ");
+                    namebuilder.append(MetaFormats.get("firework-duration"));
                     namebuilder.append(fireworkmeta.getPower());
                     for(FireworkEffect effect : fireworkmeta.getEffects()) {
                         namebuilder.append(", ");
 
                         namebuilder.append(convertFireworkTypeToDisplay(effect.getType()));
-                        namebuilder.append(" with");
-                        namebuilder.append((!effect.getColors().isEmpty() ? " colors: " : ""));
+                        namebuilder.append(MetaFormats.get("firework-with"));
+                        namebuilder.append((!effect.getColors().isEmpty() ? MetaFormats.get("firework-colors") : ""));
                         namebuilder.append(convertColorsToDisplay(effect.getColors()));
-                        namebuilder.append((!effect.getFadeColors().isEmpty() ? " and fadecolors: " : ""));
+                        namebuilder.append((!effect.getFadeColors().isEmpty() ? MetaFormats.get("firework-fadecolors") : ""));
                         namebuilder.append(convertColorsToDisplay(effect.getFadeColors()));
 
-                        namebuilder.append(effect.hasFlicker() ? " +twinkle" : "");
-                        namebuilder.append(effect.hasTrail()? " +trail" : "");
+                        namebuilder.append(effect.hasFlicker() ? MetaFormats.get("firework-twinkle") : "");
+                        namebuilder.append(effect.hasTrail()? MetaFormats.get("firework-trail") : "");
                     }
                     namebuilder.append(")");
                 }
@@ -286,7 +287,7 @@ public class SignShopItemMeta {
 
                     ItemStack[] itemStacks = shulker.getInventory().getContents();
                     if (shulker.getInventory().isEmpty()){
-                        nameBuilder.append("Empty");
+                        nameBuilder.append(MetaFormats.get("empty-container"));
                     } else {
 
                         boolean first = true;

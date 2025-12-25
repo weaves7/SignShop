@@ -1,0 +1,32 @@
+# SignShop Item Meta Formats
+# ===========================
+# This file defines customizable format strings for item descriptions.
+#
+# To add translations, add a new language section:
+#   es_ES:
+#     damaged-prefix: " Danado "
+#     colored-suffix: " Colorido "
+#     ...
+
+formats:
+  en_US:
+    # Item condition
+    damaged-prefix: " Damaged "
+
+    # Leather armor
+    colored-suffix: " Colored "
+
+    # Player heads
+    player-head-suffix: "'s Head"
+    custom-head: "Custom Player Head"
+
+    # Container contents
+    empty-container: "Empty"
+
+    # Firework descriptions
+    firework-duration: "Duration : "
+    firework-with: " with"
+    firework-colors: " colors: "
+    firework-fadecolors: " and fadecolors: "
+    firework-twinkle: " +twinkle"
+    firework-trail: " +trail"

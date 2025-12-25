@@ -16,6 +16,7 @@ import org.wargamer2010.signshop.data.SignShopBooks;
 import org.wargamer2010.signshop.data.SignShopItemMeta;
 import org.wargamer2010.signshop.commands.*;
 import org.wargamer2010.signshop.configuration.ColorUtil;
+import org.wargamer2010.signshop.configuration.MetaFormats;
 import org.wargamer2010.signshop.configuration.SignShopConfig;
 import org.wargamer2010.signshop.data.Storage;
 import org.wargamer2010.signshop.configuration.configUtil;
@@ -201,6 +202,7 @@ public class SignShop extends JavaPlugin {
         PlayerMetadata.init();
         SignShopItemMeta.init();
         ColorUtil.init();
+        MetaFormats.init();
         MoneyModifierManager.init();
 
         // Convert legacy player names to UUID
