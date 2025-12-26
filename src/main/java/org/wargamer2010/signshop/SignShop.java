@@ -103,6 +103,8 @@ public class SignShop extends JavaPlugin {
 
     public void reload() {
         signShopConfig = new SignShopConfig();
+        ColorUtil.init();
+        MetaFormats.init();
     }
 
 

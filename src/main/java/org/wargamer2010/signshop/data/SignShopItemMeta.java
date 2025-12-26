@@ -75,6 +75,13 @@ public class SignShopItemMeta {
     }
 
     private static String convertFireworkTypeToDisplay(FireworkEffect.Type type) {
+        // Try to get translated firework type from MetaFormats
+        String translated = MetaFormats.get("firework-type-" + type.toString().toLowerCase());
+        if (translated != null && !translated.isEmpty()) {
+            return translated;
+        }
+
+        // Fallback to English formatting
         String temp = signshopUtil.capFirstLetter(type.toString().toLowerCase()).replace("_", " ");
         if(temp.contains(" ")) {
             String[] temparr = temp.split(" ");
@@ -83,6 +90,24 @@ public class SignShopItemMeta {
             temp = signshopUtil.implode(temparr, " ");
         }
         return signshopUtil.capFirstLetter(temp);
+    }
+
+    private static String getTranslatedPotionType(String type) {
+        String key = "potion-type-" + type.toLowerCase();
+        String translated = MetaFormats.get(key);
+        if (translated != null && !translated.isEmpty()) {
+            return translated;
+        }
+        return itemUtil.stripConstantCase(type);
+    }
+
+    private static String getTranslatedPotionEffect(String effect) {
+        String key = "potion-effect-" + effect.toLowerCase();
+        String translated = MetaFormats.get(key);
+        if (translated != null && !translated.isEmpty()) {
+            return translated;
+        }
+        return itemUtil.stripConstantCase(effect);
     }
 
     private static boolean hasNoMeta(ItemStack stack) {
@@ -208,7 +233,7 @@ public class SignShopItemMeta {
                     nameBuilder.append(potionMeta.getDisplayName());
                 }
                 else if (potionMeta.hasBasePotionType()) {
-                    nameBuilder.append(itemUtil.stripConstantCase(potionMeta.getBasePotionType().toString()));
+                    nameBuilder.append(getTranslatedPotionType(potionMeta.getBasePotionType().toString()));
                 }
                 nameBuilder.append(getTextColor());
                 nameBuilder.append("\" ");
@@ -229,7 +254,7 @@ public class SignShopItemMeta {
                             if (first) first = false;
                             else nameBuilder.append(", ");
                             StringBuilder effectString = new StringBuilder();
-                            effectString.append(itemUtil.stripConstantCase(potionEffect.getType().getKey().getKey()));
+                            effectString.append(getTranslatedPotionEffect(potionEffect.getType().getKey().getKey()));
                             if (potionEffect.getAmplifier() > 0) {
                                 effectString.append("_");
                                 effectString.append(potionEffect.getAmplifier() + 1);

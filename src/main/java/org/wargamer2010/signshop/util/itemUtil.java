@@ -242,7 +242,7 @@ public class itemUtil {
         formattedMaterials.replace(material,string);
     }
 
-    private static String formatMaterialName(Material material) {
+    public static String formatMaterialName(Material material) {
         if(formattedMaterials.containsKey(material)) {
             return formattedMaterials.get(material);
         }

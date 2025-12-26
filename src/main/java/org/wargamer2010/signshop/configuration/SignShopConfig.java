@@ -24,6 +24,7 @@ import org.wargamer2010.signshop.util.signshopUtil;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Level;
 
@@ -1210,12 +1211,57 @@ public class SignShopConfig {
     }
 
     private void updateFormattedMaterials() {
-        File file = new File(SignShop.getInstance().getDataFolder(), "materials.yml");
-        FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
-        ConfigurationSection section = configuration.getConfigurationSection("materials");
-        if (section != null) {
-            for (String matString : section.getKeys(false)) {
-                Material matKey = Material.matchMaterial(matString);
+        // 1. Get primary language for material translations
+        String language = getPrimaryLanguageForMaterials();
+
+        // 2. Load bundled translations from JAR (base translations)
+        String bundledPath = "/materials-translated/materials-" + language + ".yml";
+        try (InputStream bundled = getClass().getResourceAsStream(bundledPath)) {
+            if (bundled != null) {
+                YamlConfiguration bundledConfig = YamlConfiguration.loadConfiguration(
+                        new InputStreamReader(bundled, StandardCharsets.UTF_8));
+                applyMaterialTranslations(bundledConfig);
+                SignShop.log("Loaded bundled material translations for language: " + language, Level.INFO);
+            } else {
+                SignShop.log("No bundled material translations found for language: " + language, Level.FINE);
+            }
+        } catch (IOException e) {
+            SignShop.log("Error loading bundled material translations: " + e.getMessage(), Level.WARNING);
+        }
+
+        // 3. Load user overrides from materials.yml (takes precedence)
+        File userFile = new File(SignShop.getInstance().getDataFolder(), "materials.yml");
+        if (userFile.exists()) {
+            FileConfiguration userConfig = YamlConfiguration.loadConfiguration(userFile);
+            applyMaterialTranslations(userConfig);
+        }
+    }
+
+    private String getPrimaryLanguageForMaterials() {
+        String[] languages = Languages.split(",");
+        if (languages.length == 0) {
+            return "en_us";
+        }
+        String primary = languages[0].trim();
+
+        // Handle legacy spelling (e.g., "german" -> "de_de")
+        for (LanguageSpelling ls : LanguageSpelling.values()) {
+            if (primary.equalsIgnoreCase(ls.oldName)) {
+                return ls.localeName.toLowerCase();
+            }
+        }
+
+        return primary.toLowerCase();
+    }
+
+    private void applyMaterialTranslations(FileConfiguration config) {
+        ConfigurationSection section = config.getConfigurationSection("materials");
+        if (section == null) {
+            return;
+        }
+        for (String matString : section.getKeys(false)) {
+            Material matKey = Material.matchMaterial(matString);
+            if (matKey != null) {
                 String customName = section.getString(matString);
                 itemUtil.updateFormattedMaterial(matKey, ChatColor.translateAlternateColorCodes(getColorCode(), customName));
             }
