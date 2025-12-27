@@ -2,6 +2,7 @@
 package org.wargamer2010.signshop.data;
 
 import com.google.common.collect.ImmutableList;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.FireworkEffect;
@@ -180,6 +181,11 @@ public class SignShopItemMeta {
                 }
             } else if(type == MetaType.LeatherArmor) {
                 LeatherArmorMeta leathermeta = (LeatherArmorMeta) meta;
+                Color defaultColor = Bukkit.getItemFactory().getDefaultLeatherColor();
+                if (leathermeta.getColor().equals(defaultColor)) {
+                    // Plain leather - no color prefix
+                    return getDisplayName(stack, getTextColor(), includeEnchantments);
+                }
                 return (ColorUtil.getColorAsString(leathermeta.getColor()) + MetaFormats.get("colored-suffix") + getDisplayName(stack, getTextColor(), includeEnchantments));
             } else if(type == MetaType.Skull) {
                 SkullMeta skullmeta = (SkullMeta) meta;
@@ -508,7 +514,10 @@ public class SignShopItemMeta {
             }
             else if(type == MetaType.LeatherArmor) {
                 LeatherArmorMeta leathermeta = (LeatherArmorMeta) meta;
-                metamap.put("color", Integer.toString(leathermeta.getColor().asRGB()));
+                Color defaultColor = Bukkit.getItemFactory().getDefaultLeatherColor();
+                if (!leathermeta.getColor().equals(defaultColor)) {
+                    metamap.put("color", Integer.toString(leathermeta.getColor().asRGB()));
+                }
             }
             else if(type == MetaType.Map) {
                 MapMeta mapmeta = (MapMeta) meta;

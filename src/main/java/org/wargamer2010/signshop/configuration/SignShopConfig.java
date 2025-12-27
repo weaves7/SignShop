@@ -203,6 +203,7 @@ public class SignShopConfig {
         setupBackOfSignTextBlacklist();
         copyFileFromJar("materials.yml", false);
         copyFileFromJar("meta.yml", false);
+        copyFileFromJar("colors.yml", false);
         copyFileFromJar("SSQuickReference.pdf", true);
         setupOperations();
         fixIncompleOperations();
@@ -1211,6 +1212,9 @@ public class SignShopConfig {
     }
 
     private void updateFormattedMaterials() {
+        // 0. Reset to English defaults before applying any translations
+        itemUtil.resetFormattedMaterials();
+
         // 1. Get primary language for material translations
         String language = getPrimaryLanguageForMaterials();
 

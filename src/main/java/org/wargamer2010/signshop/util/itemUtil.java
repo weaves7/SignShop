@@ -242,6 +242,11 @@ public class itemUtil {
         formattedMaterials.replace(material,string);
     }
 
+    public static void resetFormattedMaterials() {
+        formattedMaterials.clear();
+        initializeFormattedMaterialMap();
+    }
+
     public static String formatMaterialName(Material material) {
         if(formattedMaterials.containsKey(material)) {
             return formattedMaterials.get(material);

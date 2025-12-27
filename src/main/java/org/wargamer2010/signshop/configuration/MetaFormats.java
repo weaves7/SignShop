@@ -5,8 +5,16 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.wargamer2010.signshop.SignShop;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+
+import org.bukkit.configuration.InvalidConfigurationException;
 
 /**
  * Utility for loading and retrieving localizable item meta format strings.
@@ -25,38 +33,55 @@ public class MetaFormats {
 
     /**
      * Initialize format strings from meta.yml.
+     * Uses two-layer loading: bundled JAR formats first, then user overrides from plugin folder.
      * Should be called after SignShopConfig is initialized.
      */
     public static void init() {
         formats.clear();
         defaultFormats.clear();
 
-        FileConfiguration config = new YamlConfiguration();
-        config = configUtil.loadYMLFromJar(config, "meta.yml");
-        if (config == null) {
-            loadHardcodedDefaults();
-            return;
-        }
-
-        // Load default (en_US) formats first
-        ConfigurationSection defaultSection = config.getConfigurationSection("formats." + DEFAULT_LANGUAGE);
-        if (defaultSection != null) {
-            for (String key : defaultSection.getKeys(false)) {
-                defaultFormats.put(key, defaultSection.getString(key, ""));
-            }
-        } else {
-            loadHardcodedDefaults();
-        }
-
         // Get the configured language
         String language = getPrimaryLanguage();
 
-        // If the configured language is not en_US, try to load its formats
+        // 1. Load bundled formats from JAR (read-only, does not write to disk)
+        FileConfiguration jarConfig = loadConfigFromJar("meta.yml");
+        if (jarConfig != null) {
+            loadFormatsFromConfig(jarConfig, language);
+        }
+
+        // 2. Load user overrides from plugin folder (takes precedence)
+        File userFile = new File(SignShop.getInstance().getDataFolder(), "meta.yml");
+        if (userFile.exists()) {
+            FileConfiguration userConfig = YamlConfiguration.loadConfiguration(userFile);
+            loadFormatsFromConfig(userConfig, language);
+        }
+
+        // 3. If no formats were loaded at all, use hardcoded defaults
+        if (defaultFormats.isEmpty()) {
+            loadHardcodedDefaults();
+        }
+    }
+
+    /**
+     * Load formats from a configuration file.
+     */
+    private static void loadFormatsFromConfig(FileConfiguration config, String language) {
+        // Load default (en_US) formats
+        ConfigurationSection defaultSection = config.getConfigurationSection("formats." + DEFAULT_LANGUAGE);
+        if (defaultSection != null) {
+            for (String key : defaultSection.getKeys(false)) {
+                String value = defaultSection.getString(key, "");
+                defaultFormats.put(key, value);
+            }
+        }
+
+        // If the configured language is not en_US, load its formats
         if (!language.equals(DEFAULT_LANGUAGE)) {
             ConfigurationSection langSection = config.getConfigurationSection("formats." + language);
             if (langSection != null) {
                 for (String key : langSection.getKeys(false)) {
-                    formats.put(key, langSection.getString(key, ""));
+                    String value = langSection.getString(key, "");
+                    formats.put(key, value);
                 }
             }
         }
@@ -210,5 +235,27 @@ public class MetaFormats {
         defaultFormats.put("potion-effect-weaving", "Weaving");
         defaultFormats.put("potion-effect-oozing", "Oozing");
         defaultFormats.put("potion-effect-infested", "Infested");
+    }
+
+    /**
+     * Load a configuration file from the JAR without writing to disk.
+     * Unlike configUtil.loadYMLFromJar(), this method only reads and does not modify files.
+     *
+     * @param filename The filename to load from JAR resources
+     * @return The loaded configuration, or null if not found
+     */
+    private static FileConfiguration loadConfigFromJar(String filename) {
+        try {
+            InputStream in = MetaFormats.class.getResourceAsStream("/" + filename);
+            if (in != null) {
+                FileConfiguration config = new YamlConfiguration();
+                config.load(new InputStreamReader(in, StandardCharsets.UTF_8));
+                in.close();
+                return config;
+            }
+        } catch (IOException | InvalidConfigurationException e) {
+            SignShop.log("Could not load " + filename + " from JAR: " + e.getMessage(), Level.WARNING);
+        }
+        return null;
     }
 }

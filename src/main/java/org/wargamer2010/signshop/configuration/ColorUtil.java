@@ -1,6 +1,7 @@
 
 package org.wargamer2010.signshop.configuration;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Color;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -8,8 +9,16 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.wargamer2010.signshop.SignShop;
 import org.wargamer2010.signshop.util.signshopUtil;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+
+import org.bukkit.configuration.InvalidConfigurationException;
 
 /**
  * Utility for leather armor color name lookups.
@@ -28,33 +37,46 @@ public class ColorUtil {
 
     /**
      * Initialize color lookup from colors.yml.
+     * Uses two-layer loading: bundled JAR colors first, then user overrides from plugin folder.
      * Should be called after SignShopConfig is initialized.
      */
     public static void init() {
         colorLookup.clear();
 
-        FileConfiguration config = new YamlConfiguration();
-        config = configUtil.loadYMLFromJar(config, "colors.yml");
-        if (config == null) {
-            loadHardcodedDefaults();
-            return;
-        }
-
         // Get the configured language
         String language = getPrimaryLanguage();
 
-        // Load stock colors for the configured language (decimal RGB keys)
-        boolean loadedLanguage = loadStockColors(config, language);
+        // 1. Load bundled colors from JAR (read-only, does not write to disk)
+        FileConfiguration jarConfig = loadConfigFromJar("colors.yml");
+        if (jarConfig != null) {
+            // Load stock colors for the configured language (decimal RGB keys)
+            boolean loadedLanguage = loadStockColors(jarConfig, language);
 
-        // If configured language wasn't found, load en_US
-        if (!loadedLanguage && !language.equals(DEFAULT_LANGUAGE)) {
-            loadStockColors(config, DEFAULT_LANGUAGE);
+            // If configured language wasn't found, load en_US
+            if (!loadedLanguage && !language.equals(DEFAULT_LANGUAGE)) {
+                loadStockColors(jarConfig, DEFAULT_LANGUAGE);
+            }
+
+            // Load extended colors for fuzzy matching (hex RGB keys) - don't overwrite stock
+            loadExtendedColors(jarConfig, false);
         }
 
-        // Load extended colors for fuzzy matching (hex RGB keys)
-        loadExtendedColors(config);
+        // 2. Load user overrides from plugin folder (takes precedence)
+        File userFile = new File(SignShop.getInstance().getDataFolder(), "colors.yml");
+        if (userFile.exists()) {
+            FileConfiguration userConfig = YamlConfiguration.loadConfiguration(userFile);
 
-        // If no colors were loaded at all, use hardcoded defaults
+            // Load user stock colors (overrides bundled)
+            boolean loadedUserLanguage = loadStockColors(userConfig, language);
+            if (!loadedUserLanguage && !language.equals(DEFAULT_LANGUAGE)) {
+                loadStockColors(userConfig, DEFAULT_LANGUAGE);
+            }
+
+            // Load user extended colors (overrides bundled) - allow overwrites
+            loadExtendedColors(userConfig, true);
+        }
+
+        // 3. If no colors were loaded at all, use hardcoded defaults
         if (colorLookup.isEmpty()) {
             loadHardcodedDefaults();
         }
@@ -76,10 +98,8 @@ public class ColorUtil {
         for (String key : section.getKeys(false)) {
             try {
                 int rgb = Integer.parseInt(key);
-                String colorName = section.getString(key);
-                if (colorName != null && !colorName.isEmpty()) {
-                    colorLookup.put(rgb, colorName);
-                }
+                String colorName = section.getString(key, "");
+                colorLookup.put(rgb, colorName);
             } catch (NumberFormatException ignored) {
                 // Skip invalid keys
             }
@@ -89,8 +109,13 @@ public class ColorUtil {
 
     /**
      * Load extended colors for fuzzy matching (hex RGB keys).
+     * When loading from JAR, doesn't overwrite stock colors.
+     * When loading from user file, allows overwrites.
+     *
+     * @param config The configuration to load from
+     * @param allowOverwrite If true, overwrites existing entries (for user overrides)
      */
-    private static void loadExtendedColors(FileConfiguration config) {
+    private static void loadExtendedColors(FileConfiguration config, boolean allowOverwrite) {
         ConfigurationSection section = config.getConfigurationSection("extended-colors");
         if (section == null) {
             return;
@@ -99,12 +124,10 @@ public class ColorUtil {
         for (String key : section.getKeys(false)) {
             try {
                 int rgb = Integer.parseInt(key, 16);
-                // Don't overwrite stock colors
-                if (!colorLookup.containsKey(rgb)) {
-                    String colorName = section.getString(key);
-                    if (colorName != null && !colorName.isEmpty()) {
-                        colorLookup.put(rgb, colorName);
-                    }
+                // Only add if not exists, unless allowOverwrite is true
+                if (allowOverwrite || !colorLookup.containsKey(rgb)) {
+                    String colorName = section.getString(key, "");
+                    colorLookup.put(rgb, colorName);
                 }
             } catch (NumberFormatException ignored) {
                 // Skip invalid hex keys
@@ -136,32 +159,48 @@ public class ColorUtil {
 
     /**
      * Load hardcoded defaults as fallback if colors.yml is missing or empty.
+     * Uses MC 1.21 leather armor dye colors.
      */
     private static void loadHardcodedDefaults() {
-        // Stock Minecraft leather armor colors
-        colorLookup.put(8339378, "purple");
-        colorLookup.put(11685080, "magenta");
-        colorLookup.put(8073150, "purple");
-        colorLookup.put(6724056, "light blue");
-        colorLookup.put(5013401, "cyan");
-        colorLookup.put(5000268, "gray");
-        colorLookup.put(10066329, "light gray");
-        colorLookup.put(15892389, "pink");
-        colorLookup.put(14188339, "orange");
-        colorLookup.put(8375321, "lime");
-        colorLookup.put(11743532, "red");
-        colorLookup.put(2437522, "blue");
-        colorLookup.put(15066419, "yellow");
-        colorLookup.put(10040115, "red");
-        colorLookup.put(1644825, "black");
-        colorLookup.put(6704179, "brown");
-        colorLookup.put(6717235, "green");
-        colorLookup.put(16777215, "white");
-        colorLookup.put(3361970, "blue");
-        colorLookup.put(1973019, "black");
-        colorLookup.put(14188952, "pink");
-        colorLookup.put(14602026, "yellow");
-        colorLookup.put(10511680, "brown");
+        // Stock Minecraft 1.21 leather armor colors (16 dye colors)
+        colorLookup.put(16383998, "white");       // #F9FFFE
+        colorLookup.put(10329495, "light gray");  // #9D9D97
+        colorLookup.put(4673362, "gray");         // #474F52
+        colorLookup.put(1908001, "black");        // #1D1D21
+        colorLookup.put(8606770, "brown");        // #835432
+        colorLookup.put(11546150, "red");         // #B02E26
+        colorLookup.put(16351261, "orange");      // #F9801D
+        colorLookup.put(16701501, "yellow");      // #FED83D
+        colorLookup.put(8439583, "lime");         // #80C71F
+        colorLookup.put(6192150, "green");        // #5E7C16
+        colorLookup.put(1481884, "cyan");         // #169C9C
+        colorLookup.put(3847130, "light blue");   // #3AB3DA
+        colorLookup.put(3949738, "blue");         // #3C44AA
+        colorLookup.put(8991416, "purple");       // #8932B8
+        colorLookup.put(13061821, "magenta");     // #C74EBD
+        colorLookup.put(15961002, "pink");        // #F38BAA
+    }
+
+    /**
+     * Load a configuration file from the JAR without writing to disk.
+     * Unlike configUtil.loadYMLFromJar(), this method only reads and does not modify files.
+     *
+     * @param filename The filename to load from JAR resources
+     * @return The loaded configuration, or null if not found
+     */
+    private static FileConfiguration loadConfigFromJar(String filename) {
+        try {
+            InputStream in = ColorUtil.class.getResourceAsStream("/" + filename);
+            if (in != null) {
+                FileConfiguration config = new YamlConfiguration();
+                config.load(new InputStreamReader(in, StandardCharsets.UTF_8));
+                in.close();
+                return config;
+            }
+        } catch (IOException | InvalidConfigurationException e) {
+            SignShop.log("Could not load " + filename + " from JAR: " + e.getMessage(), Level.WARNING);
+        }
+        return null;
     }
 
     /**
